@@ -47,23 +47,18 @@ class GhettoBlaster():
         # If we enable this, we'll get in trouble in the removeFromQueue method:
         # self.queue_treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
 
-        self.library = Gtk.TreeStore(str, str) # URI, artist, album, title
-        self.queue = Gtk.ListStore(str, str) # URI, title
+        self.library = Gtk.TreeStore(str)  # Only 1 text "column" to contain all
+        self.queue = Gtk.ListStore(str, str)  # URI, title
 
-        self.library_treeview.set_model(self.library)
-        self.playlist_treeview.set_model(self.library)
+        self.library_treeview.set_model(self.library)  # TODO: use a modelfilter
+        self.playlist_treeview.set_model(self.library)  # TODO: use a modelfilter
         self.queue_treeview.set_model(self.queue)
 
-        # Library: URI, artist, album, title
-        column = Gtk.TreeViewColumn("Artist")
-        artist = Gtk.CellRendererText()
-        column.pack_start(artist, True)
-        column.add_attribute(artist, "text", 1)
-        self.library_treeview.append_column(column)
-        column = Gtk.TreeViewColumn("Album")
-        album = Gtk.CellRendererText()
-        column.pack_start(album, True)
-        column.add_attribute(album, "text", 2)
+        # Library: only one column, with two visible levels (artist, album)
+        column = Gtk.TreeViewColumn()
+        column_contents = Gtk.CellRendererText()
+        column.pack_start(column_contents, True)
+        column.add_attribute(column_contents, "text", 0)
         self.library_treeview.append_column(column)
 
         # TODO: add an icon column for the currently played track...
@@ -81,19 +76,22 @@ class GhettoBlaster():
         for track in library:
             if artist not already there: add it
             if album not already there: add it as a child of the artist
+            add the track title and URI
         """
-        last_parent_iter = self.library.get_iter_first()
-
-        # In a dictionary, store artists as keys and albums as list for keys
-        self.library_dict = {}
+        last_artist_iter = self.library.get_iter_first()
+        # A list of tracks inside a dic of albums inside a dic of artists:
+        already_added = {}
         for track in LIBRARY:
             (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
-            if not self.library_dict.has_key(artist):
-                self.library_dict[artist] = []
-                last_parent_iter = self.library.append(None, [artist, artist])
-            if album not in self.library_dict[artist]:
-                self.library_dict[artist].append(album)
-                self.library.append(last_parent_iter, [album, album])
+            if artist not in already_added:
+                already_added[artist] = {}
+                last_artist_iter = self.library.append(None, [artist])
+            if album not in already_added[artist]:
+                # Append another dictionary, which contains the list of tracks
+                already_added[artist][album] = []
+                last_album_iter = self.library.append(last_artist_iter, [album])
+            # Finally add the actual track to the album (without checking dupes)
+            self.library.append(last_album_iter, [title])
 
     def _populate_queue(self, tracks=None):
         for track in LIBRARY:
