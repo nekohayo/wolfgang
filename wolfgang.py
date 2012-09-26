@@ -78,23 +78,22 @@ class GhettoBlaster():
 
     def _populate_library(self):
         """
-        Appends albums to artists in the tree
+        for track in library:
+            if artist not already there: add it
+            if album not already there: add it as a child of the artist
         """
-        for track in LIBRARY:
-            already_there = False   # loop through artists checking if it is
-                                    # already there
-            # URI, artist, album, title
-            it = self.library.get_iter_first()
-            while (it != None) and (already_there == False):
-                print self.library.get_value(it, 0)
-                if track[2] == self.library.get_value(it, 0):
-                    already_there = True
-                else:
-                    it = self.library.iter_next(it)
+        last_parent_iter = self.library.get_iter_first()
 
-            if not already_there:
-                it = self.library.append(None, [track[2], track[2]])
-            self.library.append(it, [track[3], track[3]])
+        # In a dictionary, store artists as keys and albums as list for keys
+        self.library_dict = {}
+        for track in LIBRARY:
+            (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
+            if not self.library_dict.has_key(artist):
+                self.library_dict[artist] = []
+                last_parent_iter = self.library.append(None, [artist, artist])
+            if album not in self.library_dict[artist]:
+                self.library_dict[artist].append(album)
+                self.library.append(last_parent_iter, [album, album])
 
     def _populate_queue(self, tracks=None):
         for track in LIBRARY:
