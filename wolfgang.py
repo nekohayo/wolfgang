@@ -6,11 +6,9 @@ from gi.repository import Gtk
 from gi.repository import Gst
 from os import path
 from sys import exit
-
-
-SAMPLE_QUEUE_TRACKS = ["石川大阪友好条約", "Heartbreaker", "Hijo de la luna",
-                        "9,000 Miles", "校庭 DAYDREAMER", "Avec ces yeux là"]
-TEST_TRACK = "file://" + path.join(path.abspath(path.curdir), "test.ogg")
+# In a separate "samples" file, use a list in a tuple (the "LIBRARY" constant).
+# Each list is composed of strings for URI, title, artist, album.
+from samples import LIBRARY
 
 class GhettoBlaster():
 
@@ -29,8 +27,8 @@ class GhettoBlaster():
 
         self._prepare_treeviews()
         # FIXME: temporary test stuff:
-        self._populate_queue(SAMPLE_QUEUE_TRACKS)
-        self.set_uri()
+        self._populate_queue()
+        self.set_uri(LIBRARY[-1][0])
 
         self.window = self.builder.get_object("window1")
         self.window.set_icon_name("rhythmbox")
@@ -48,31 +46,43 @@ class GhettoBlaster():
         # If we enable this, we'll get in trouble in the removeFromQueue method:
         # self.queue_treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
 
-        self.library = Gtk.ListStore(str)
-        self.playlist = Gtk.ListStore(str)
-        self.queue = Gtk.ListStore(str)
+        self.library = Gtk.TreeStore(str, str) # URI, artist, album, title
+        self.queue = Gtk.ListStore(str, str) # URI, title
 
         self.library_treeview.set_model(self.library)
-        self.playlist_treeview.set_model(self.playlist)
+        self.playlist_treeview.set_model(self.library)
         self.queue_treeview.set_model(self.queue)
+
+        # Library: URI, artist, album, title
+        column = Gtk.TreeViewColumn("Artist")
+        artist = Gtk.CellRendererText()
+        column.pack_start(artist, True)
+        column.add_attribute(artist, "text", 1)
+        self.library_treeview.append_column(column)
+        column = Gtk.TreeViewColumn("Album")
+        album = Gtk.CellRendererText()
+        column.pack_start(album, True)
+        column.add_attribute(album, "text", 2)
+        self.library_treeview.append_column(column)
 
         # TODO: add an icon column for the currently played track...
         # or remove tracks as they play, reinsert when clicking "previous"?
         column = Gtk.TreeViewColumn("Title")
         title = Gtk.CellRendererText()
         column.pack_start(title, True)
-        column.add_attribute(title, "text", 0)
+        column.add_attribute(title, "text", 1)
         self.queue_treeview.append_column(column)
         # Silly hack to steal the focus from the gtk entry:
         self.library_treeview.grab_focus()
 
-    def _populate_queue(self, tracks):
-        for track in tracks:
-            self.queue.append([track])
 
-    def set_uri(self, uri=TEST_TRACK):
+    def _populate_queue(self, tracks=None):
+        for track in LIBRARY:
+            self.queue.append([track[0], track[1]])
+
+    def set_uri(self, uri):
         self.tune = Gst.ElementFactory.make("playbin", "John Smith")
-        self.tune.props.uri = TEST_TRACK
+        self.tune.props.uri = uri
 #        bus = self.tune.get_bus()
 #        bus.add_signal_watch()
 #        bus.enable_sync_message_emission()
@@ -87,7 +97,7 @@ class GhettoBlaster():
 
     def play_pause(self, widget):
         if widget.props.active:
-            print "Play", TEST_TRACK
+            print "Play", self.tune.props.uri
             self.tune.set_state(Gst.State.PLAYING)
             self.builder.get_object("time_slider").set_sensitive(True)
         else:
@@ -110,7 +120,7 @@ class GhettoBlaster():
 
     def clearQueue(self, widget):
         # C-style "no messing around with loops, just drop the pointer" tactic
-        self.queue = Gtk.ListStore(str)
+        self.queue = Gtk.ListStore(str, str)
         self.queue_treeview.set_model(self.queue)
 
     def removeFromQueue(self, widget):
