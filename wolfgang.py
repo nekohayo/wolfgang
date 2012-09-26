@@ -27,6 +27,7 @@ class GhettoBlaster():
 
         self._prepare_treeviews()
         # FIXME: temporary test stuff:
+        self._populate_library()
         self._populate_queue()
         self.set_uri(LIBRARY[-1][0])
 
@@ -75,6 +76,25 @@ class GhettoBlaster():
         # Silly hack to steal the focus from the gtk entry:
         self.library_treeview.grab_focus()
 
+    def _populate_library(self):
+        """
+        Appends albums to artists in the tree
+        """
+        for track in LIBRARY:
+            already_there = False   # loop through artists checking if it is
+                                    # already there
+            # URI, artist, album, title
+            it = self.library.get_iter_first()
+            while (it != None) and (already_there == False):
+                print self.library.get_value(it, 0)
+                if track[2] == self.library.get_value(it, 0):
+                    already_there = True
+                else:
+                    it = self.library.iter_next(it)
+
+            if not already_there:
+                it = self.library.append(None, [track[2], track[2]])
+            self.library.append(it, [track[3], track[3]])
 
     def _populate_queue(self, tracks=None):
         for track in LIBRARY:
