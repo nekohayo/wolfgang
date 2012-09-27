@@ -153,6 +153,36 @@ class GhettoBlaster():
         model, row_iter = self.queue_treeview.get_selection().get_selected()
         self.queue_store.remove(row_iter)
 
+    def _libraryTreeviewRowSelected(self, treeview):
+        """
+        When a row is clicked in the library treeview, check if it's an artist
+        or album. Depending on the type, query self.library to find the child
+        tracks (and URIs), and replace self.playlist_store with a new store
+        model containing the results.
+        """
+        (treemodel, current_iter) = treeview.get_selection().get_selected()
+        if current_iter is None:
+            # Nothing selected. This happens on startup.
+            return
+        column = 0
+        current_value = self.library_store.get_value(current_iter, column)
+        if treemodel.iter_depth(current_iter) is 0:
+            # An artist is selected
+            tracks = []
+            for album in self.library[current_value]:
+                for track in self.library[current_value][album]:
+                    tracks.append(track)
+        else:
+            # An album is selected
+            temp_iter = treemodel.iter_parent(current_iter)
+            artist = self.library_store.get_value(temp_iter, column)
+            tracks = self.library[artist][current_value]
+        # Don't bother with existing items, scrap the old model and rebuild it
+        self.playlist_store = Gtk.ListStore(str, str)
+        for track in tracks:
+            self.playlist_store.append(track)
+        self.playlist_treeview.set_model(self.playlist_store)
+
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit
         # TODO: destroy any running pipeline
