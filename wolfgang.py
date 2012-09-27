@@ -47,12 +47,13 @@ class GhettoBlaster():
         # If we enable this, we'll get in trouble in the removeFromQueue method:
         # self.queue_treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
 
-        self.library = Gtk.TreeStore(str)  # Only 1 text "column" to contain all
-        self.queue = Gtk.ListStore(str, str)  # URI, title
+        self.library_store = Gtk.TreeStore(str)  # Only 1 "column" to contain all
+        self.playlist_store = Gtk.ListStore(str, str)  # URI, title
+        self.queue_store = Gtk.ListStore(str, str)  # URI, title
 
-        self.library_treeview.set_model(self.library)  # TODO: use a modelfilter
-        self.playlist_treeview.set_model(self.library)  # TODO: use a modelfilter
-        self.queue_treeview.set_model(self.queue)
+        self.library_treeview.set_model(self.library_store)
+        self.playlist_treeview.set_model(self.playlist_store)
+        self.queue_treeview.set_model(self.queue_store)
 
         # Library: only one column, with two visible levels (artist, album)
         column = Gtk.TreeViewColumn()
@@ -61,13 +62,20 @@ class GhettoBlaster():
         column.add_attribute(column_contents, "text", 0)
         self.library_treeview.append_column(column)
 
+        # Playlist: two columns in the store (title, URI), but only one shown
+        column = Gtk.TreeViewColumn("Title")
+        title = Gtk.CellRendererText()
+        column.pack_start(title, True)
+        column.add_attribute(title, "text", 0)
+        self.playlist_treeview.append_column(column)
+
         # TODO: add an icon column for the currently played track...
-        # or remove tracks as they play, reinsert when clicking "previous"?
         column = Gtk.TreeViewColumn("Title")
         title = Gtk.CellRendererText()
         column.pack_start(title, True)
         column.add_attribute(title, "text", 1)
         self.queue_treeview.append_column(column)
+
         # Silly hack to steal the focus from the gtk entry:
         self.library_treeview.grab_focus()
 
@@ -78,24 +86,25 @@ class GhettoBlaster():
             if album not already there: add it as a child of the artist
             add the track title and URI
         """
-        last_artist_iter = self.library.get_iter_first()
-        # A list of tracks inside a dic of albums inside a dic of artists:
-        already_added = {}
+        last_artist_iter = self.library_store.get_iter_first()
+        # A list of tracks (and URIs) in a dic of albums in a dic of artists:
+        self.library = {}
         for track in LIBRARY:
             (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
-            if artist not in already_added:
-                already_added[artist] = {}
-                last_artist_iter = self.library.append(None, [artist])
-            if album not in already_added[artist]:
-                # Append another dictionary, which contains the list of tracks
-                already_added[artist][album] = []
-                last_album_iter = self.library.append(last_artist_iter, [album])
-            # Finally add the actual track to the album (without checking dupes)
-            self.library.append(last_album_iter, [title])
+            if artist not in self.library:
+                self.library[artist] = {}
+                last_artist_iter = self.library_store.append(None, [artist])
+            if album not in self.library[artist]:
+                self.library[artist][album] = []
+                last_album_iter = self.library_store.append(last_artist_iter, [album])
+            # Add the track title and URI to our internal tree, but not the UI
+            self.library[artist][album].append([title, uri])
 
     def _populate_queue(self, tracks=None):
+        # TODO this method should only be called by the playlist
+        # for now, we just crawl the library to show some placeholder contents
         for track in LIBRARY:
-            self.queue.append([track[0], track[1]])
+            self.queue_store.append([track[0], track[1]])
 
     def set_uri(self, uri):
         self.tune = Gst.ElementFactory.make("playbin", "John Smith")
@@ -137,12 +146,12 @@ class GhettoBlaster():
 
     def clearQueue(self, widget):
         # C-style "no messing around with loops, just drop the pointer" tactic
-        self.queue = Gtk.ListStore(str, str)
-        self.queue_treeview.set_model(self.queue)
+        self.queue_store = Gtk.ListStore(str, str)
+        self.queue_treeview.set_model(self.queue_store)
 
     def removeFromQueue(self, widget):
         model, row_iter = self.queue_treeview.get_selection().get_selected()
-        self.queue.remove(row_iter)
+        self.queue_store.remove(row_iter)
 
     def quit(self, unused_window, unused_event):
         Gtk.main_quit
