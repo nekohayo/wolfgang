@@ -81,7 +81,7 @@ class GhettoBlaster():
 
     def _populate_library(self):
         """
-        for track in library:
+        for track in LIBRARY:
             if artist not already there: add it
             if album not already there: add it as a child of the artist
             add the track title and URI
@@ -118,10 +118,10 @@ class GhettoBlaster():
     """
     UI callback methods
     """
-    def previous(self, widget):
+    def previous(self, unused_widget=None):
         raise NotImplementedError
 
-    def play_pause(self, widget):
+    def _play_pause(self, widget):
         if widget.props.active:
             print "Play", self.tune.props.uri
             self.tune.set_state(Gst.State.PLAYING)
@@ -130,30 +130,30 @@ class GhettoBlaster():
             print "Pause"
             self.tune.set_state(Gst.State.PAUSED)
 
-    def next(self, widget):
+    def next(self, unused_widget=None):
         raise NotImplementedError
 
-    def seek(self, widget):
+    def _seek(self, widget):
         target_percent = widget.get_adjustment().props.value / 100.0
         target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
         self.tune.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, target_position)
 
-    def shuffle(self, widget):
+    def shuffle(self, unused_widget=None):
         raise NotImplementedError
 
-    def addToQueue(self, widget):
+    def addToQueue(self, unused_widget=None):
         raise NotImplementedError
 
-    def clearQueue(self, widget):
+    def clearQueue(self, unused_widget=None):
         # C-style "no messing around with loops, just drop the pointer" tactic
         self.queue_store = Gtk.ListStore(str, str)
         self.queue_treeview.set_model(self.queue_store)
 
-    def removeFromQueue(self, widget):
+    def _removeFromQueue(self, widget):
         model, row_iter = self.queue_treeview.get_selection().get_selected()
         self.queue_store.remove(row_iter)
 
-    def quit(self, unused_window, unused_event):
+    def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit
         # TODO: destroy any running pipeline
         exit(0)
