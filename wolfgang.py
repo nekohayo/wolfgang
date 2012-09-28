@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Wolfgang is a very simple audio player demo using media indexing
-# Copyright 2012 Luis de Bethencourt & Jean-François Fortin Tam
+# Copyright 2012 Jean-François Fortin Tam, Luis de Bethencourt
 from gi.repository import Gtk
 from gi.repository import Gst
 from os import path
@@ -26,9 +26,8 @@ class GhettoBlaster():
         self.main_toolbar.get_style_context().add_class("primary-toolbar")
 
         self._prepare_treeviews()
-        # FIXME: temporary test stuff:
         self._populate_library()
-        self._populate_queue()
+        # FIXME: temporary test stuff:
         self.set_uri(LIBRARY[-1][0])
 
         self.window = self.builder.get_object("window1")
@@ -48,8 +47,8 @@ class GhettoBlaster():
         # self.queue_treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
 
         self.library_store = Gtk.TreeStore(str)  # Only 1 "column" to contain all
-        self.playlist_store = Gtk.ListStore(str, str)  # URI, title
-        self.queue_store = Gtk.ListStore(str, str)  # URI, title
+        self.playlist_store = Gtk.ListStore(str, str)  # title, URI
+        self.queue_store = Gtk.ListStore(str, str)  # title, URI
 
         self.library_treeview.set_model(self.library_store)
         self.playlist_treeview.set_model(self.playlist_store)
@@ -73,7 +72,7 @@ class GhettoBlaster():
         column = Gtk.TreeViewColumn("Title")
         title = Gtk.CellRendererText()
         column.pack_start(title, True)
-        column.add_attribute(title, "text", 1)
+        column.add_attribute(title, "text", 0)
         self.queue_treeview.append_column(column)
 
         # Silly hack to steal the focus from the gtk entry:
@@ -142,7 +141,27 @@ class GhettoBlaster():
         raise NotImplementedError
 
     def addToQueue(self, unused_widget=None):
-        raise NotImplementedError
+        """
+        Add the playlist's selected item to the queue. If no item is selected,
+        add them all and let the norse gods sort them out.
+        """
+        # Warning: this all assumes we only allow single item selections.
+        # get_selected will fail to work if we allow multiple selections.
+        (treemodel, current_iter) = self.playlist_treeview.get_selection().get_selected()
+        column = 0
+
+        def _addIterToQueue(current_iter):
+            uri = treemodel.get_value(current_iter, 0)
+            title = treemodel.get_value(current_iter, 1)
+            self.queue_store.append([uri, title])
+
+        if current_iter is None:
+            current_iter = treemodel.get_iter_first()
+            while current_iter:  # Loop through iters until we get False
+                _addIterToQueue(current_iter)
+                current_iter = treemodel.iter_next(current_iter)
+        else:
+            _addIterToQueue(current_iter)
 
     def clearQueue(self, unused_widget=None):
         # C-style "no messing around with loops, just drop the pointer" tactic
