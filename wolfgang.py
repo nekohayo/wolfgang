@@ -27,8 +27,6 @@ class GhettoBlaster():
 
         self._prepare_treeviews()
         self._populate_library()
-        # FIXME: temporary test stuff:
-        self.set_uri(LIBRARY[-1][0])
 
         self.window = self.builder.get_object("window1")
         self.window.set_icon_name("rhythmbox")
@@ -201,6 +199,16 @@ class GhettoBlaster():
         for track in tracks:
             self.playlist_store.append(track)
         self.playlist_treeview.set_model(self.playlist_store)
+
+    def _queueTreeviewRowActivated(self, treeview, unused_position, unused_column):
+        """
+        When a row is activated in the queue treeview, start playback.
+        """
+        (treemodel, current_iter) = treeview.get_selection().get_selected()
+        uri = treemodel.get_value(current_iter, 1)
+        self.builder.get_object("play_button").set_active(False)
+        self.set_uri(uri)
+        self.builder.get_object("play_button").set_active(True)
 
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit

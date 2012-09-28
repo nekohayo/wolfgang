@@ -184,6 +184,7 @@
                     <property name="headers_visible">False</property>
                     <property name="reorderable">True</property>
                     <property name="enable_search">False</property>
+                    <signal name="row-activated" handler="_queueTreeviewRowActivated" swapped="no"/>
                     <child internal-child="selection">
                       <object class="GtkTreeSelection" id="queue_selection"/>
                     </child>
