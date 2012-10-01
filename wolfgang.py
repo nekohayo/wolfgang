@@ -14,6 +14,8 @@ class GhettoBlaster():
 
     def __init__(self):
         Gst.init(None)
+        self.tune = Gst.ElementFactory.make("playbin", "John Smith")
+
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
         self.builder.connect_signals(self)
@@ -104,8 +106,9 @@ class GhettoBlaster():
             self.queue_store.append([track[0], track[1]])
 
     def set_uri(self, uri):
-        self.tune = Gst.ElementFactory.make("playbin", "John Smith")
+        self.tune.set_state(Gst.State.NULL)
         self.tune.props.uri = uri
+        self.tune.set_state(Gst.State.READY)
 #        bus = self.tune.get_bus()
 #        bus.add_signal_watch()
 #        bus.enable_sync_message_emission()
@@ -207,6 +210,7 @@ class GhettoBlaster():
         (treemodel, current_iter) = treeview.get_selection().get_selected()
         uri = treemodel.get_value(current_iter, 1)
         self.builder.get_object("play_button").set_active(False)
+        self.builder.get_object("time_slider").set_value(0)
         self.set_uri(uri)
         self.builder.get_object("play_button").set_active(True)
 
