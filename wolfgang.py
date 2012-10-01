@@ -32,7 +32,7 @@ class GhettoBlaster():
 
         self.window = self.builder.get_object("window1")
         self.window.set_icon_name("rhythmbox")
-        #self.window.maximize()
+        self.window.maximize()
         self.window.connect("delete-event", self.quit)
         self.window.show_all()
 
