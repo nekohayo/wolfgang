@@ -4,6 +4,7 @@
 # Copyright 2012 Jean-François Fortin Tam, Luis de Bethencourt
 from gi.repository import Gtk
 from gi.repository import Gst
+from gi.repository import GObject
 from os import path
 from sys import exit
 # In a separate "samples" file, use a list in a tuple (the "LIBRARY" constant).
@@ -15,6 +16,7 @@ class GhettoBlaster():
     def __init__(self):
         Gst.init(None)
         self.tune = Gst.ElementFactory.make("playbin", "John Smith")
+        self.is_playing = False
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -26,6 +28,8 @@ class GhettoBlaster():
         gtksettings.set_property("gtk-application-prefer-dark-theme", True)
         self.main_toolbar = self.builder.get_object("main_toolbar")
         self.main_toolbar.get_style_context().add_class("primary-toolbar")
+
+        self.time_slider = self.builder.get_object("time_slider")
 
         self._prepare_treeviews()
         self._populate_library()
@@ -110,27 +114,23 @@ class GhettoBlaster():
 #        bus.connect("sync-message", self._onBusSyncMessage)
 
     """
-    UI callback methods
+    UI methods and callbacks
     """
     def previous(self, unused_widget=None):
         raise NotImplementedError
 
     def _play_pause(self, widget):
         if widget.props.active:
-            print "Play", self.tune.props.uri
             self.tune.set_state(Gst.State.PLAYING)
-            self.builder.get_object("time_slider").set_sensitive(True)
+            self.is_playing = True
+            self.time_slider.set_sensitive(True)
+            GObject.timeout_add(500, self._updateSliderPosition)
         else:
-            print "Pause"
             self.tune.set_state(Gst.State.PAUSED)
+            self.is_playing = False
 
     def next(self, unused_widget=None):
         raise NotImplementedError
-
-    def _seek(self, widget):
-        target_percent = widget.get_adjustment().props.value / 100.0
-        target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
-        self.tune.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, target_position)
 
     def shuffle(self, unused_widget=None):
         raise NotImplementedError
@@ -204,17 +204,31 @@ class GhettoBlaster():
         (treemodel, current_iter) = treeview.get_selection().get_selected()
         uri = treemodel.get_value(current_iter, 1)
         self.builder.get_object("play_button").set_active(False)
-        self.builder.get_object("time_slider").set_value(0)
+        self.time_slider.set_value(0)
         self.set_uri(uri)
         self.builder.get_object("play_button").set_active(True)
 
-    def _overrideSliderMouseEvent(self, widget, event):
+    def _sliderMouseEvent(self, widget, event):
         """
         Override the event button to use a middle-click when left-clicking
         the slider. This should be called by the button-press-event signal to
         override the button, then by button-release-event to free the button.
+        
+        This is also where seeks are triggered on click.
         """
         event.button = 2
+        target_percent = widget.get_adjustment().props.value / 100.0
+        target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
+        self.tune.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, target_position)
+        
+
+    def _updateSliderPosition(self):
+        if self.is_playing:
+            pos = self.tune.query_position(Gst.Format.TIME)[1]
+            duration = self.tune.query_duration(Gst.Format.TIME)[1]
+            new_slider_pos = pos / float(duration) * 100
+            self.time_slider.get_adjustment().props.value = new_slider_pos
+        return self.is_playing
 
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit

@@ -274,9 +274,8 @@
                     <property name="fill_level">100</property>
                     <property name="round_digits">1</property>
                     <property name="draw_value">False</property>
-                    <signal name="button-press-event" handler="_overrideSliderMouseEvent" swapped="no"/>
-                    <signal name="button-release-event" handler="_overrideSliderMouseEvent" swapped="no"/>
-                    <signal name="value-changed" handler="_seek" swapped="no"/>
+                    <signal name="button-press-event" handler="_sliderMouseEvent" swapped="no"/>
+                    <signal name="button-release-event" handler="_sliderMouseEvent" swapped="no"/>
                   </object>
                 </child>
               </object>
