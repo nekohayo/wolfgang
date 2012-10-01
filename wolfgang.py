@@ -99,12 +99,6 @@ class GhettoBlaster():
             # Add the track title and URI to our internal tree, but not the UI
             self.library[artist][album].append([title, uri])
 
-    def _populate_queue(self, tracks=None):
-        # TODO this method should only be called by the playlist
-        # for now, we just crawl the library to show some placeholder contents
-        for track in LIBRARY:
-            self.queue_store.append([track[0], track[1]])
-
     def set_uri(self, uri):
         self.tune.set_state(Gst.State.NULL)
         self.tune.props.uri = uri
