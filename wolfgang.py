@@ -7,6 +7,7 @@ from gi.repository import Gst
 from gi.repository import GObject
 from os import path
 from sys import exit
+import random
 # In a separate "samples" file, use a list in a tuple (the "LIBRARY" constant).
 # Each list is composed of strings for URI, title, artist, album.
 from samples import LIBRARY
@@ -17,6 +18,8 @@ class GhettoBlaster():
         Gst.init(None)
         self.tune = Gst.ElementFactory.make("playbin", "John Smith")
         self.is_playing = False
+        # An internal list matching self.queue_store to allow shuffling:
+        self._internal_queue = []
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -133,7 +136,12 @@ class GhettoBlaster():
         raise NotImplementedError
 
     def shuffle(self, unused_widget=None):
-        raise NotImplementedError
+        random.shuffle(self._internal_queue)
+        self.queue_store = Gtk.ListStore(str, str)
+        for item in self._internal_queue:
+            self.queue_store.append(item)
+        self.queue_treeview.set_model(self.queue_store)
+        # TODO: reset the treeview cursor/iter
 
     def addToQueue(self, unused_widget=None):
         """
@@ -149,6 +157,8 @@ class GhettoBlaster():
             uri = treemodel.get_value(current_iter, 0)
             title = treemodel.get_value(current_iter, 1)
             self.queue_store.append([uri, title])
+            # This will be used for the shuffle function
+            self._internal_queue.append([uri, title])
 
         if current_iter is None:
             current_iter = treemodel.get_iter_first()
