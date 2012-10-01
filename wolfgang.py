@@ -214,6 +214,14 @@ class GhettoBlaster():
         self.set_uri(uri)
         self.builder.get_object("play_button").set_active(True)
 
+    def _overrideSliderMouseEvent(self, widget, event):
+        """
+        Override the event button to use a middle-click when left-clicking
+        the slider. This should be called by the button-press-event signal to
+        override the button, then by button-release-event to free the button.
+        """
+        event.button = 2
+
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit
         # TODO: destroy any running pipeline
