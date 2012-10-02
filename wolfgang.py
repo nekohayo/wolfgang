@@ -31,7 +31,9 @@ class GhettoBlaster():
         gtksettings.set_property("gtk-application-prefer-dark-theme", True)
         self.main_toolbar = self.builder.get_object("main_toolbar")
         self.main_toolbar.get_style_context().add_class("primary-toolbar")
+        self.main_toolbar.set_sensitive(False)
 
+        self.play_button = self.builder.get_object("play_button")
         self.time_slider = self.builder.get_object("time_slider")
 
         self._prepare_treeviews()
@@ -112,34 +114,44 @@ class GhettoBlaster():
             # Add the track title and URI to our internal tree, but not the UI
             self.library[artist][album].append([title, uri])
 
-    def set_uri(self, uri):
-        self.tune.set_state(Gst.State.NULL)
-        self.tune.props.uri = uri
-        self.tune.set_state(Gst.State.READY)
-#        bus = self.tune.get_bus()
-#        bus.add_signal_watch()
-#        bus.enable_sync_message_emission()
-#        bus.connect("message", self._onBusMessage)
-#        bus.connect("sync-message", self._onBusSyncMessage)
 
     """
     UI methods and callbacks
     """
     def previous(self, unused_widget=None):
-        raise NotImplementedError
+        if self.queue_current_iter is None:
+            return False
+        prev_iter = self.queue_store.iter_previous(self.queue_current_iter)
+        if prev_iter is None:
+            return False
+        uri = self.queue_store.get_value(prev_iter, 2)
+        self.set_uri(uri)
+        self.play()
+        self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+        self.queue_store.set_value(prev_iter, 0, "♪")
+        self.queue_current_iter = prev_iter
 
     def _play_pause(self, widget):
+        """
+        Callback for the Play pushbutton
+        """
         if widget.props.active:
-            self.tune.set_state(Gst.State.PLAYING)
-            self.is_playing = True
-            self.time_slider.set_sensitive(True)
-            GObject.timeout_add(500, self._updateSliderPosition)
+            self.play()
         else:
-            self.tune.set_state(Gst.State.PAUSED)
-            self.is_playing = False
+            self.pause()
 
     def next(self, unused_widget=None):
-        raise NotImplementedError
+        if self.queue_current_iter is None:
+            return False
+        next_iter = self.queue_store.iter_next(self.queue_current_iter)
+        if next_iter is None:
+            return False
+        uri = self.queue_store.get_value(next_iter, 2)
+        self.set_uri(uri)
+        self.play()
+        self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+        self.queue_store.set_value(next_iter, 0, "♪")
+        self.queue_current_iter = next_iter
 
     def shuffle(self, unused_widget=None):
         random.shuffle(self._internal_queue)
@@ -165,6 +177,8 @@ class GhettoBlaster():
             self.queue_store.append([None, uri, title])
             # This will be used for the shuffle function. The first item is for
             # the cursor/playback indicator column, but it's not used here: None
+            if self._internal_queue == []:
+                self.queue_current_iter = self.queue_store.get_iter_first()
             self._internal_queue.append([None, uri, title])
 
         if current_iter is None:
@@ -174,11 +188,13 @@ class GhettoBlaster():
                 current_iter = treemodel.iter_next(current_iter)
         else:
             _addIterToQueue(current_iter)
+        self.main_toolbar.set_sensitive(True)
 
     def clearQueue(self, unused_widget=None):
         # C-style "no messing around with loops, just drop the pointer" tactic
         self.queue_store = Gtk.ListStore(str, str, str)
         self.queue_treeview.set_model(self.queue_store)
+        self.main_toolbar.set_sensitive(False)
 
     def _removeFromQueue(self, widget):
         model, row_iter = self.queue_treeview.get_selection().get_selected()
@@ -224,10 +240,9 @@ class GhettoBlaster():
         if previous_iter:
             treemodel.set_value(previous_iter, 0, "")  # remove the ♪ cursor
         treemodel.set_value(current_iter, 0, "♪")
-        self.builder.get_object("play_button").set_active(False)
-        self.time_slider.set_value(0)
+        self.pause()
         self.set_uri(uri)
-        self.builder.get_object("play_button").set_active(True)
+        self.play()
         self.queue_current_iter = current_iter
 
     def _sliderMouseEvent(self, widget, event):
@@ -243,7 +258,6 @@ class GhettoBlaster():
         target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
         self.tune.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, target_position)
         
-
     def _updateSliderPosition(self):
         if self.is_playing:
             pos = self.tune.query_position(Gst.Format.TIME)[1]
@@ -256,6 +270,31 @@ class GhettoBlaster():
         Gtk.main_quit
         # TODO: destroy any running pipeline
         exit(0)
+
+    """
+    Public playback methods (not callbacks)
+    """
+    def play(self):
+        if self.tune.props.uri is None:
+            # The user clicked play without selecting a track, play the 1st
+            self.set_uri(self.queue_store.get_value(self.queue_current_iter, 2))
+            self.queue_store.set_value(self.queue_current_iter, 0, "♪")
+        self.tune.set_state(Gst.State.PLAYING)
+        self.is_playing = True
+        self.play_button.props.active = True
+        self.time_slider.set_sensitive(True)
+        GObject.timeout_add(500, self._updateSliderPosition)
+
+    def pause(self):
+        self.tune.set_state(Gst.State.PAUSED)
+        self.play_button.props.active = False
+        self.is_playing = False
+
+    def set_uri(self, uri):
+        self.time_slider.set_value(0)
+        self.tune.set_state(Gst.State.NULL)
+        self.tune.props.uri = uri
+        self.tune.set_state(Gst.State.READY)
 
     """
     GStreamer callbacks
