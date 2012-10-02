@@ -16,7 +16,14 @@ class GhettoBlaster():
 
     def __init__(self):
         Gst.init(None)
-        self.tune = Gst.ElementFactory.make("playbin", "John Smith")
+        print "Running with GStreamer", str(Gst.version()[0]) + "." + str(Gst.version()[1]) + "." + str(Gst.version()[2])
+        self.IS_GST010 = Gst.version()[0] == 0
+        if self.IS_GST010:
+            PLAYBIN_ELEMENT = "playbin2"
+        else:
+            PLAYBIN_ELEMENT = "playbin"
+
+        self.tune = Gst.ElementFactory.make(PLAYBIN_ELEMENT, "John Smith")
         self.is_playing = False
         self._seeking = False
         self._sliderGrabbed = False
@@ -298,12 +305,17 @@ class GhettoBlaster():
             self._sliderGrabbed = False
         if self._sliderGrabbed:
             target_percent = widget.get_adjustment().props.value / 100.0
-            self._target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
+            if self.IS_GST010:
+                duration = self.tune.query_duration(Gst.Format.TIME)[2]
+            else:
+                duration = self.tune.query_duration(Gst.Format.TIME)[1]
+            self._target_position = target_percent * duration
             self._seek()
 
     def _seek(self):
         if not self._seeking and self._current_position != self._target_position:
             self._seeking = True
+            print "Seek to", self._target_position
             self.tune.seek_simple(Gst.Format.TIME,
                                 Gst.SeekFlags.FLUSH | Gst.SeekFlags.SEGMENT | Gst.SeekFlags.KEY_UNIT,
                                 self._target_position)
@@ -311,11 +323,17 @@ class GhettoBlaster():
 
     def _updateSliderPosition(self):
         if self.is_playing and not self._sliderGrabbed:
-            pos = self.tune.query_position(Gst.Format.TIME)[1]
-            duration = self.tune.query_duration(Gst.Format.TIME)[1]
+            if self.IS_GST010:
+                pos = self.tune.query_position(Gst.Format.TIME)[2]
+                duration = self.tune.query_duration(Gst.Format.TIME)[2]
+            else:
+                pos = self.tune.query_position(Gst.Format.TIME)[1]
+                duration = self.tune.query_duration(Gst.Format.TIME)[1]
             if duration == 0:  # GStreamer nonsense, occurring randomly.
                 return
+            print "Position is", pos, "and duration is", duration
             new_slider_pos = pos / float(duration) * 100
+            print "\tUpdate slider position to", new_slider_pos
             self.time_slider.get_adjustment().props.value = new_slider_pos
         return self.is_playing
 
@@ -353,6 +371,7 @@ class GhettoBlaster():
         self.tune.props.uri = uri
         self.tune.set_state(Gst.State.READY)
         bus = self.tune.get_bus()
+        print "A URI has been set, the bus is", bus
         bus.add_signal_watch()
         bus.enable_sync_message_emission()
         bus.connect("message", self._onBusMessage)
@@ -364,6 +383,7 @@ class GhettoBlaster():
         if message is None:
             # This doesn't make any sense, but it happens all the time.
             return
+        print "Got message of type", message.type
         if message.type is Gst.MessageType.EOS:
             if self.queue_store.iter_next(self.queue_current_iter):
                 print "Song ended, play the next one"
@@ -375,6 +395,7 @@ class GhettoBlaster():
             # TODO: do something with ID3 tags or not?
             pass
         elif message.type is Gst.MessageType.ASYNC_DONE:
+            print "Async done, now try seeking"
             self._seeking = False
             self._seek()
 
