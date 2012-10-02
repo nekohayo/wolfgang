@@ -365,7 +365,12 @@ class GhettoBlaster():
             # This doesn't make any sense, but it happens all the time.
             return
         if message.type is Gst.MessageType.EOS:
-            print "switch to the next track, if any..."
+            if self.queue_store.iter_next(self.queue_current_iter):
+                print "Song ended, play the next one"
+                self.next()
+            else:
+                print "Playback ended"
+                self.play_button.set_active(False)
         elif message.type is Gst.MessageType.TAG:
             # TODO: do something with ID3 tags or not?
             pass
