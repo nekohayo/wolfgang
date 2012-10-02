@@ -234,16 +234,16 @@ class GhettoBlaster():
         """
         When a row is activated in the queue treeview, start playback.
         """
-        previous_iter = self.queue_current_iter
         (treemodel, current_iter) = treeview.get_selection().get_selected()
-        uri = treemodel.get_value(current_iter, 2)
+        previous_iter = self.queue_current_iter
         if previous_iter:
             treemodel.set_value(previous_iter, 0, "")  # remove the ♪ cursor
         treemodel.set_value(current_iter, 0, "♪")
+        self.queue_current_iter = current_iter
         self.pause()
+        uri = treemodel.get_value(current_iter, 2)
         self.set_uri(uri)
         self.play()
-        self.queue_current_iter = current_iter
 
     def _sliderMouseEvent(self, widget, event):
         """
