@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Wolfgang is a very simple audio player demo using media indexing
 # Copyright 2012 Jean-François Fortin Tam, Luis de Bethencourt
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 from gi.repository import Gst
 from gi.repository import GObject
 from os import path
@@ -18,6 +18,9 @@ class GhettoBlaster():
         Gst.init(None)
         self.tune = Gst.ElementFactory.make("playbin", "John Smith")
         self.is_playing = False
+        self._seeking = False
+        self._sliderGrabbed = False
+        self._current_position = self._target_position = 0
         # An internal list matching self.queue_store to allow shuffling:
         self._internal_queue = []
 
@@ -289,12 +292,25 @@ class GhettoBlaster():
         This is also where seeks are triggered on click.
         """
         event.button = 2
-        target_percent = widget.get_adjustment().props.value / 100.0
-        target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
-        self.tune.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, target_position)
-        
+        if event.type is Gdk.EventType.BUTTON_PRESS:
+            self._sliderGrabbed = True
+        elif event.type is Gdk.EventType.BUTTON_RELEASE:
+            self._sliderGrabbed = False
+        if self._sliderGrabbed:
+            target_percent = widget.get_adjustment().props.value / 100.0
+            self._target_position = target_percent * self.tune.query_duration(Gst.Format.TIME)[1]
+            self._seek()
+
+    def _seek(self):
+        if not self._seeking and self._current_position != self._target_position:
+            self._seeking = True
+            self.tune.seek_simple(Gst.Format.TIME,
+                                Gst.SeekFlags.FLUSH | Gst.SeekFlags.SEGMENT | Gst.SeekFlags.KEY_UNIT,
+                                self._target_position)
+            self._current_position = self._target_position
+
     def _updateSliderPosition(self):
-        if self.is_playing:
+        if self.is_playing and not self._sliderGrabbed:
             pos = self.tune.query_position(Gst.Format.TIME)[1]
             duration = self.tune.query_duration(Gst.Format.TIME)[1]
             if duration == 0:  # GStreamer nonsense, occurring randomly.
@@ -353,9 +369,9 @@ class GhettoBlaster():
         elif message.type is Gst.MessageType.TAG:
             # TODO: do something with ID3 tags or not?
             pass
-
-    def _onBusSyncMessage(self, bus, message):
-        print "We're syncing! Abandon ship!"
+        elif message.type is Gst.MessageType.ASYNC_DONE:
+            self._seeking = False
+            self._seek()
 
 Amadeus = GhettoBlaster()
 Gtk.main()

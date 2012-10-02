@@ -276,6 +276,7 @@
                     <property name="draw_value">False</property>
                     <signal name="button-press-event" handler="_sliderMouseEvent" swapped="no"/>
                     <signal name="button-release-event" handler="_sliderMouseEvent" swapped="no"/>
+                    <signal name="motion-notify-event" handler="_sliderMouseEvent" swapped="no"/>
                   </object>
                 </child>
               </object>
