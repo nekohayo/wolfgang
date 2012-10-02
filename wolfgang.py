@@ -303,7 +303,8 @@ class GhettoBlaster():
             self._sliderGrabbed = True
         elif event.type is Gdk.EventType.BUTTON_RELEASE:
             self._sliderGrabbed = False
-        if self._sliderGrabbed:
+            
+        if event.type is Gdk.EventType.BUTTON_RELEASE:
             target_percent = widget.get_adjustment().props.value / 100.0
             if self.IS_GST010:
                 duration = self.tune.query_duration(Gst.Format.TIME)[2]
