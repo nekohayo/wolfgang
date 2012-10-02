@@ -33,8 +33,12 @@ class GhettoBlaster():
         self.main_toolbar.get_style_context().add_class("primary-toolbar")
         self.main_toolbar.set_sensitive(False)
 
+        self.previous_button = self.builder.get_object("previous_button")
         self.play_button = self.builder.get_object("play_button")
+        self.next_button = self.builder.get_object("next_button")
         self.time_slider = self.builder.get_object("time_slider")
+        self.next_button.set_sensitive(False)
+        self.previous_button.set_sensitive(False)
 
         self._prepare_treeviews()
         self._populate_library()
@@ -130,6 +134,9 @@ class GhettoBlaster():
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(prev_iter, 0, "♪")
         self.queue_current_iter = prev_iter
+        self.next_button.set_sensitive(True)
+        if not self.queue_store.iter_previous(self.queue_current_iter):
+            self.previous_button.set_sensitive(False)
 
     def _play_pause(self, widget):
         """
@@ -152,6 +159,9 @@ class GhettoBlaster():
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(next_iter, 0, "♪")
         self.queue_current_iter = next_iter
+        self.previous_button.set_sensitive(True)
+        if not self.queue_store.iter_next(self.queue_current_iter):
+            self.next_button.set_sensitive(False)
 
     def shuffle(self, unused_widget=None):
         random.shuffle(self._internal_queue)
@@ -263,6 +273,13 @@ class GhettoBlaster():
         self.set_uri(uri)
         self.play()
 
+        self.previous_button.set_sensitive(False)
+        self.next_button.set_sensitive(False)
+        if self.queue_store.iter_previous(self.queue_current_iter):
+            self.previous_button.set_sensitive(True)
+        if self.queue_store.iter_next(self.queue_current_iter):
+            self.next_button.set_sensitive(True)
+
     def _sliderMouseEvent(self, widget, event):
         """
         Override the event button to use a middle-click when left-clicking
@@ -302,6 +319,10 @@ class GhettoBlaster():
         self.play_button.props.active = True
         self.time_slider.set_sensitive(True)
         GObject.timeout_add(500, self._updateSliderPosition)
+        if self.queue_store.iter_next(self.queue_current_iter):
+            self.next_button.set_sensitive(True)
+        if self.queue_store.iter_previous(self.queue_current_iter):
+            self.previous_button.set_sensitive(True)
 
     def pause(self):
         self.tune.set_state(Gst.State.PAUSED)
