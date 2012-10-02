@@ -336,11 +336,18 @@ class GhettoBlaster():
         self.tune.set_state(Gst.State.NULL)
         self.tune.props.uri = uri
         self.tune.set_state(Gst.State.READY)
+        bus = self.tune.get_bus()
+        bus.add_signal_watch()
+        bus.enable_sync_message_emission()
+        bus.connect("message", self._onBusMessage)
 
     """
     GStreamer callbacks
     """
     def _onBusMessage(self, bus, message):
+        if message is None:
+            # This doesn't make any sense, but it happens all the time.
+            return
         if message.type is Gst.MessageType.EOS:
             print "switch to the next track, if any..."
         elif message.type is Gst.MessageType.TAG:
