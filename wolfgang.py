@@ -297,6 +297,8 @@ class GhettoBlaster():
         if self.is_playing:
             pos = self.tune.query_position(Gst.Format.TIME)[1]
             duration = self.tune.query_duration(Gst.Format.TIME)[1]
+            if duration == 0:  # GStreamer nonsense, occurring randomly.
+                return
             new_slider_pos = pos / float(duration) * 100
             self.time_slider.get_adjustment().props.value = new_slider_pos
         return self.is_playing
