@@ -194,11 +194,29 @@ class GhettoBlaster():
         # C-style "no messing around with loops, just drop the pointer" tactic
         self.queue_store = Gtk.ListStore(str, str, str)
         self.queue_treeview.set_model(self.queue_store)
+        self.queue_current_iter = None
+        self._internal_queue = []
         self.main_toolbar.set_sensitive(False)
 
     def _removeFromQueue(self, widget):
         model, row_iter = self.queue_treeview.get_selection().get_selected()
+        # Now look at what you've done! This messes up everything.
+        # We need to check if the removed item was the current iter. If so,
+        # do a bunch of black magic to figure out who should be its replacement.
+        if row_iter is self.queue_current_iter:
+            # FIXME: if you remove the currently playing row,
+            # you'll get a segfault later when you try to play another track.
+            next_item = self.queue_store.iter_next(row_iter)
+            if next_item is not None:
+                self.queue_current_iter = next_item
+            else:
+                prev_item = self.queue_store.iter_previous(row_iter)
+                if prev_item is not None:
+                    self.queue_current_iter = prev_item
+                else:
+                    self.queue_current_iter = None
         self.queue_store.remove(row_iter)
+        # FIXME: remove it from self._internal_queue too
 
     def _libraryTreeviewRowSelected(self, treeview):
         """
