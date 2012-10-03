@@ -268,6 +268,12 @@ class GhettoBlaster():
             self.playlist_store.append(track)
         self.playlist_treeview.set_model(self.playlist_store)
 
+    def _playlistRowActivated(self, unused_treeview, unused_position, unused_column):
+        """
+        Allow adding to the queue by double-clicking/activating a playlist item
+        """
+        self.addToQueue()
+
     def _queueTreeviewRowActivated(self, treeview, unused_position, unused_column):
         """
         When a row is activated in the queue treeview, start playback.

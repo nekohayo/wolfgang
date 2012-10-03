@@ -79,6 +79,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="headers_visible">False</property>
+                    <signal name="row-activated" handler="_playlistRowActivated" swapped="no"/>
                     <child internal-child="selection">
                       <object class="GtkTreeSelection" id="playlist_selection"/>
                     </child>
@@ -100,10 +101,8 @@
                 <property name="show_arrow">False</property>
                 <child>
                   <object class="GtkToolButton" id="clearQueue_button">
-                    <property name="use_action_appearance">False</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="use_action_appearance">False</property>
                     <property name="label" translatable="yes">Clear queue</property>
                     <property name="use_underline">True</property>
                     <property name="icon_name">edit-clear-symbolic</property>
@@ -116,10 +115,8 @@
                 </child>
                 <child>
                   <object class="GtkToolButton" id="removeFromQueue_button">
-                    <property name="use_action_appearance">False</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="use_action_appearance">False</property>
                     <property name="label" translatable="yes">Remove</property>
                     <property name="use_underline">True</property>
                     <property name="icon_name">list-remove-symbolic</property>
@@ -146,10 +143,8 @@
                 <property name="show_arrow">False</property>
                 <child>
                   <object class="GtkToolButton" id="enqueue_button">
-                    <property name="use_action_appearance">False</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="use_action_appearance">False</property>
                     <property name="is_important">True</property>
                     <property name="label" translatable="yes">Add to queue</property>
                     <property name="use_underline">True</property>
@@ -213,10 +208,8 @@
             <property name="show_arrow">False</property>
             <child>
               <object class="GtkToolButton" id="previous_button">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-media-previous</property>
                 <signal name="clicked" handler="previous" swapped="no"/>
@@ -228,10 +221,8 @@
             </child>
             <child>
               <object class="GtkToggleToolButton" id="play_button">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
                 <property name="is_important">True</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-media-play</property>
@@ -244,10 +235,8 @@
             </child>
             <child>
               <object class="GtkToolButton" id="next_button">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
                 <property name="use_underline">True</property>
                 <property name="stock_id">gtk-media-next</property>
                 <signal name="clicked" handler="next" swapped="no"/>
@@ -259,10 +248,8 @@
             </child>
             <child>
               <object class="GtkToolItem" id="toolbutton5">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
                 <child>
                   <object class="GtkScale" id="time_slider">
                     <property name="visible">True</property>
@@ -287,10 +274,8 @@
             </child>
             <child>
               <object class="GtkToolButton" id="shuffle_button">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="use_action_appearance">False</property>
                 <property name="label" translatable="yes">Shuffle</property>
                 <property name="use_underline">True</property>
                 <property name="icon_name">mail-send-receive-symbolic</property>
