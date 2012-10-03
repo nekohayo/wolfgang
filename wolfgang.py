@@ -292,13 +292,17 @@ class GhettoBlaster():
 
     def _sliderMouseEvent(self, widget, event):
         """
-        Override the event button to use a middle-click when left-clicking
-        the slider. This should be called by the button-press-event signal to
-        override the button, then by button-release-event to free the button.
+        We handle the mouse button clicks and movements (scrubbing) here.
+        This is thus called by button-press-event, button-release-event and
+        motion-notify-event.
         
         This is also where seeks are triggered on click.
         """
-        event.button = 2
+        if Gtk.get_major_version() >= 3 and Gtk.get_minor_version() < 6:
+            # Override the event button to use a middle-click when left-clicking
+            # the slider, allowing it to wark directly to the desired position.
+            # This behavior has been fixed in GTK 3.6.
+            event.button = 2
         if event.type is Gdk.EventType.BUTTON_PRESS:
             self._sliderGrabbed = True
         elif event.type is Gdk.EventType.BUTTON_RELEASE:
