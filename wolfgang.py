@@ -119,6 +119,8 @@ class GhettoBlaster():
         self.library = {}
         for track in LIBRARY:
             (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
+            if not Gst.uri_is_valid(uri):
+                uri = Gst.filename_to_uri(uri)
             if artist not in self.library:
                 self.library[artist] = {}
                 last_artist_iter = self.library_store.append(None, [artist])
