@@ -349,7 +349,7 @@ class GhettoBlaster():
             self._seeking = True
             print "Seek to", self._target_position
             self.tune.seek_simple(Gst.Format.TIME,
-                                Gst.SeekFlags.FLUSH | Gst.SeekFlags.SEGMENT | Gst.SeekFlags.KEY_UNIT,
+                                Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                                 self._target_position)
             self._current_position = self._target_position
 
@@ -401,11 +401,10 @@ class GhettoBlaster():
         self.tune.set_state(Gst.State.NULL)
         self.tune.props.uri = uri
         self.tune.set_state(Gst.State.READY)
-        bus = self.tune.get_bus()
-        print "A URI has been set, the bus is", bus
-        bus.add_signal_watch()
-        bus.enable_sync_message_emission()
-        bus.connect("message", self._onBusMessage)
+        self.bus = self.tune.get_bus()
+        print "A URI has been set, the bus is", self.bus
+        self.bus.add_signal_watch()
+        self.bus.connect("message", self._onBusMessage)
 
     """
     GStreamer callbacks
