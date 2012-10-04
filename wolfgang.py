@@ -28,8 +28,6 @@ class GhettoBlaster():
         self._seeking = False
         self._sliderGrabbed = False
         self._current_position = self._target_position = 0
-        # An internal list matching self.queue_store to allow shuffling:
-        self._internal_queue = []
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -176,9 +174,19 @@ class GhettoBlaster():
             self.next_button.set_sensitive(False)
 
     def shuffle(self, unused_widget=None):
-        random.shuffle(self._internal_queue)
+        # Walk through the current queue and create a list out of it
+        internal_queue = []
+        current_iter = self.queue_store.get_iter_first()
+        while current_iter:
+            uri = self.queue_store.get_value(current_iter, 1)
+            title = self.queue_store.get_value(current_iter, 2)
+            # The first item is the playback indicator column, not used here, so None
+            internal_queue.append([None, uri, title])
+            current_iter = self.queue_store.iter_next(current_iter)
+        # Shuffle everything up and then recreate the treeview from it.
+        random.shuffle(internal_queue)
         self.queue_store = Gtk.ListStore(str, str, str)
-        for item in self._internal_queue:
+        for item in internal_queue:
             self.queue_store.append(item)
         self.queue_treeview.set_model(self.queue_store)
         self.queue_current_iter = None
@@ -199,13 +207,13 @@ class GhettoBlaster():
             self.queue_store.append([None, uri, title])
             # This will be used for the shuffle function. The first item is for
             # the cursor/playback indicator column, but it's not used here: None
-            if self._internal_queue == []:
+            if self.queue_current_iter is None:
                 self.queue_current_iter = self.queue_store.get_iter_first()
-            self._internal_queue.append([None, uri, title])
 
         if current_iter is None:
             current_iter = treemodel.get_iter_first()
-            while current_iter:  # Loop through iters until we get False
+            # Loop through iters in the playlist (not queue) until we get False
+            while current_iter:
                 _addIterToQueue(current_iter)
                 current_iter = treemodel.iter_next(current_iter)
         else:
@@ -217,7 +225,6 @@ class GhettoBlaster():
         self.queue_store = Gtk.ListStore(str, str, str)
         self.queue_treeview.set_model(self.queue_store)
         self.queue_current_iter = None
-        self._internal_queue = []
         self.main_toolbar.set_sensitive(False)
 
     def _removeFromQueue(self, widget):
@@ -238,7 +245,6 @@ class GhettoBlaster():
                 else:
                     self.queue_current_iter = None
         self.queue_store.remove(row_iter)
-        # FIXME: remove it from self._internal_queue too
 
     def _libraryTreeviewRowSelected(self, treeview):
         """
@@ -352,7 +358,6 @@ class GhettoBlaster():
 
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit
-        # TODO: destroy any running pipeline
         exit(0)
 
     """
