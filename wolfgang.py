@@ -229,12 +229,22 @@ class GhettoBlaster():
 
     def _removeFromQueue(self, widget):
         model, row_iter = self.queue_treeview.get_selection().get_selected()
-        # Now look at what you've done! This messes up everything.
-        # We need to check if the removed item was the current iter. If so,
-        # do a bunch of black magic to figure out who should be its replacement.
-        if row_iter is self.queue_current_iter:
-            # FIXME: if you remove the currently playing row,
-            # you'll get a segfault later when you try to play another track.
+        if row_iter is None:  # Nothing selected, nothing to remove.
+            return
+
+        # SNAFU. The treeview selection gives us a model === self.queue_store,
+        # but row_iter with a different reference than self.queue_current_iter,
+        # even though they have the exact same values and the exact same model,
+        # which segfaults later when trying to play another track! Urgh.
+        # We're thus forced to do the comparison manually with the URI values:
+        selected_row_is_queue_current_iter = False
+        if self.queue_store.get_value(row_iter, 2) == self.queue_store.get_value(self.queue_current_iter, 2):
+            # That check is quite naïve and might be incorrect in edge cases
+            # where you have duplicates in your queue, but whatever.
+            selected_row_is_queue_current_iter = True
+
+        # If the removed item was the current iter, figure out its replacement.
+        if selected_row_is_queue_current_iter:
             next_item = self.queue_store.iter_next(row_iter)
             if next_item is not None:
                 self.queue_current_iter = next_item
@@ -244,6 +254,9 @@ class GhettoBlaster():
                     self.queue_current_iter = prev_item
                 else:
                     self.queue_current_iter = None
+        # Else, do nothing; the previous/next feature will still work, and
+        # the list store will be working correctly.
+        # In any case, we can now safely remove the item from the list store:
         self.queue_store.remove(row_iter)
 
     def _libraryTreeviewRowSelected(self, treeview):
