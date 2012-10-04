@@ -57,6 +57,13 @@ class GhettoBlaster():
         self.window.connect("delete-event", self.quit)
         self.window.show_all()
 
+        self.bus = self.tune.get_bus()
+        self.bus.add_signal_watch()
+        self.bus.connect("message", self._onBusMessage)
+        self.tune.connect("about-to-finish",  self._about_to_finish)
+
+        GObject.timeout_add(500, self._updateSliderPosition)
+
     """
     UI initialization crack
     """
@@ -367,13 +374,12 @@ class GhettoBlaster():
             else:
                 pos = self.tune.query_position(Gst.Format.TIME)[1]
                 duration = self.tune.query_duration(Gst.Format.TIME)[1]
-            if duration == 0:  # GStreamer nonsense, occurring randomly.
-                return
-            print "Position is", pos, "and duration is", duration
-            new_slider_pos = pos / float(duration) * 100
-            print "\tUpdate slider position to", new_slider_pos
-            self.time_slider.get_adjustment().props.value = new_slider_pos
-        return self.is_playing
+            if not duration == 0:  # GStreamer nonsense, occurring randomly.
+                print "Position is", pos, "and duration is", duration
+                new_slider_pos = pos / float(duration) * 100
+                print "\tUpdate slider position to", new_slider_pos
+                self.time_slider.get_adjustment().props.value = new_slider_pos
+        return True
 
     def quit(self, unused_window=None, unused_event=None):
         Gtk.main_quit
@@ -391,7 +397,6 @@ class GhettoBlaster():
         self.is_playing = True
         self.play_button.props.active = True
         self.time_slider.set_sensitive(True)
-        GObject.timeout_add(500, self._updateSliderPosition)
         if self.queue_store.iter_next(self.queue_current_iter):
             self.next_button.set_sensitive(True)
         if self.queue_store.iter_previous(self.queue_current_iter):
@@ -407,10 +412,7 @@ class GhettoBlaster():
         self.tune.set_state(Gst.State.NULL)
         self.tune.props.uri = uri
         self.tune.set_state(Gst.State.READY)
-        self.bus = self.tune.get_bus()
-        print "A URI has been set, the bus is", self.bus
-        self.bus.add_signal_watch()
-        self.bus.connect("message", self._onBusMessage)
+        print "A URI has been set"
 
     """
     GStreamer callbacks
@@ -419,13 +421,6 @@ class GhettoBlaster():
         if message is None:
             # This doesn't make any sense, but it happens all the time.
             return
-        if message.type is Gst.MessageType.EOS:
-            if self.queue_store.iter_next(self.queue_current_iter):
-                print "Song ended, play the next one"
-                self.next()
-            else:
-                print "Playback ended"
-                self.play_button.set_active(False)
         elif message.type is Gst.MessageType.TAG:
             # TODO: do something with ID3 tags or not?
             pass
@@ -438,6 +433,23 @@ class GhettoBlaster():
             print "Got message of src ", message.src
             print "Got message of error ", message.parse_error()
 
+    def _about_to_finish (self, playbin):
+        next_iter = self.queue_store.iter_next(self.queue_current_iter)
+        if next_iter is not None:
+            print "Song ended, play the next one"
+            uri = self.queue_store.get_value(next_iter, 2)
+            self.tune.props.uri = uri
+            self.play()
+            self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+            self.queue_store.set_value(next_iter, 0, "♪")
+            self.queue_current_iter = next_iter
+            self.previous_button.set_sensitive(True)
+            if not self.queue_store.iter_next(self.queue_current_iter):
+                self.next_button.set_sensitive(False)
+
+        else:
+            print "Playback ended"
+            self.play_button.set_active(False)
 
 Amadeus = GhettoBlaster()
 Gtk.main()
