@@ -414,7 +414,6 @@ class GhettoBlaster():
         if message is None:
             # This doesn't make any sense, but it happens all the time.
             return
-        print "Got message of type", message.type
         if message.type is Gst.MessageType.EOS:
             if self.queue_store.iter_next(self.queue_current_iter):
                 print "Song ended, play the next one"
@@ -429,6 +428,11 @@ class GhettoBlaster():
             print "Async done, now try seeking"
             self._seeking = False
             self._seek()
+        elif message.type is Gst.MessageType.ERROR:
+            print "Got message of type ", message.type
+            print "Got message of src ", message.src
+            print "Got message of error ", message.parse_error()
+
 
 Amadeus = GhettoBlaster()
 Gtk.main()
