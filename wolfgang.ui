@@ -103,6 +103,7 @@
                   <object class="GtkToolButton" id="clearQueue_button">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Remove all tracks from the queue</property>
                     <property name="label" translatable="yes">Clear queue</property>
                     <property name="use_underline">True</property>
                     <property name="icon_name">edit-clear-symbolic</property>
@@ -117,6 +118,7 @@
                   <object class="GtkToolButton" id="removeFromQueue_button">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="tooltip_text" translatable="yes">Remove the selected track from the queue</property>
                     <property name="label" translatable="yes">Remove</property>
                     <property name="use_underline">True</property>
                     <property name="icon_name">list-remove-symbolic</property>
