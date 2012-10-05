@@ -280,7 +280,7 @@ class GhettoBlaster():
         # In any case, we can now safely remove the item from the list store:
         self.queue_store.remove(row_iter)
 
-    def _libraryTreeviewRowSelected(self, treeview):
+    def _libraryRowSelected(self, treeview):
         """
         When a row is clicked in the library treeview, check if it's an artist
         or album. Depending on the type, query self.library to find the child

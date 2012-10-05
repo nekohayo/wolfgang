@@ -52,7 +52,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="headers_visible">False</property>
-                    <signal name="cursor-changed" handler="_libraryTreeviewRowSelected" swapped="no"/>
+                    <signal name="cursor-changed" handler="_libraryRowSelected" swapped="no"/>
                     <child internal-child="selection">
                       <object class="GtkTreeSelection" id="library_selection"/>
                     </child>
