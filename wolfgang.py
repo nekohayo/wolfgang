@@ -189,7 +189,11 @@ class GhettoBlaster():
         for item in internal_queue:
             self.queue_store.append(item)
         self.queue_treeview.set_model(self.queue_store)
-        self.queue_current_iter = None
+        # If the user shuffles, reset everything and play the first track
+        self.queue_current_iter = self.queue_store.get_iter_first()
+        self.play_button.set_active(False)
+        self.play_button.set_active(True)
+        self.previous_button.set_sensitive(False)
 
     def addToQueue(self, unused_widget=None):
         """
@@ -225,6 +229,8 @@ class GhettoBlaster():
         self.queue_store = Gtk.ListStore(str, str, str)
         self.queue_treeview.set_model(self.queue_store)
         self.queue_current_iter = None
+        # Stop playback, since we're going to insensitize the UI anyway:
+        self.play_button.set_active(False)
         self.main_toolbar.set_sensitive(False)
 
     def _removeFromQueue(self, widget):
