@@ -20,6 +20,8 @@ class GhettoBlaster():
         self.IS_GST010 = Gst.version()[0] == 0
         if self.IS_GST010:
             PLAYBIN_ELEMENT = "playbin2"
+            print "Only GStreamer 1.0 is supported for this demo."
+            exit(1)
         else:
             PLAYBIN_ELEMENT = "playbin"
 
