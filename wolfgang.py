@@ -128,12 +128,18 @@ class GhettoBlaster():
                 uri = Gst.filename_to_uri(uri)
             if artist not in self.library:
                 self.library[artist] = {}
-                last_artist_iter = self.library_store.append(None, [artist])
             if album not in self.library[artist]:
                 self.library[artist][album] = []
-                last_album_iter = self.library_store.append(last_artist_iter, [album])
-            # Add the track title and URI to our internal tree, but not the UI
             self.library[artist][album].append([title, uri])
+        # And now, we have a nice internal model that is guaranteed against
+        # duplicates and incorrectly parented items, so create the tree store
+        # model from it. It needs to be done here instead of in the loop above,
+        # otherwise we would not correctly parent the albums with the artists
+        # if the tracks in samples.py are provided in a non-ordered fashion.
+        for artist in self.library.iterkeys():
+            artist_iter = self.library_store.append(None, [artist])
+            for album in self.library[artist].iterkeys():
+                self.library_store.append(artist_iter, [album])
 
 
     """
