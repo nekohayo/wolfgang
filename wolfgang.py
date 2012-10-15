@@ -81,7 +81,13 @@ class GhettoBlaster():
         self.queue_store = Gtk.ListStore(str, str, str)  # cursor, title, URI
         self.queue_current_iter = None  # To keep track of where the cursor was
 
-        self.library_treeview.set_model(self.library_store)
+        # Filtering model for the search box.
+        # Use this instead of using self.storemodel directly
+        searchEntry = self.builder.get_object("search_entry")
+        self.library_filtered = self.library_store.filter_new()
+        self.library_filtered.set_visible_func(self.filter_library, data=searchEntry)
+
+        self.library_treeview.set_model(self.library_filtered)
         self.playlist_treeview.set_model(self.playlist_store)
         self.queue_treeview.set_model(self.queue_store)
 
@@ -279,6 +285,53 @@ class GhettoBlaster():
         # the list store will be working correctly.
         # In any case, we can now safely remove the item from the list store:
         self.queue_store.remove(row_iter)
+
+    def _searchEntryChanged(self, widget):
+        self.library_filtered.refilter()
+
+    def _searchEntryIconRelease(self, widget, unused_icon_position, unused_arg):
+        widget.set_text("")
+
+    def filter_library(self, treemodel, iter, data):
+        """
+        Toggle the visibility of a row. Used for the search box.
+        """
+        text = data.get_text().lower()
+        if text == "":
+            return True  # Avoid silly warnings
+
+        print "Searching for", text
+        in_artist = in_album = False
+        if treemodel.iter_depth(iter) is 0:
+            # An artist is selected. However, we need to check the children too!
+            artist_name = treemodel.get_value(iter, 0)
+            in_artist = text in artist_name.lower()
+            if in_artist:
+                print "\tFound in artist %s, show the artist" % artist_name
+                return True
+            # If at least one of the children has it, the parent must be shown.
+            print "\tNot found in artist %s, checking its albums..." % artist_name
+            for child in range(treemodel.iter_n_children(iter)):
+                child_value = treemodel.get_value(treemodel.iter_nth_child(iter, child), 0)
+                if text in child_value.lower():
+                    print "\t\tFound in album %s, show the artist" % child_value
+                    return True
+                else:
+                    print "\t\tNot found in album %s" % child_value
+        else:
+            # An album is selected. Check if it matches the string
+            in_album = text in treemodel.get_value(iter, 0).lower()
+            if in_album:
+                print "The current album row matches, show it"
+                return True
+            else:
+                # Check if the string is contained in the artist name:
+                artist_iter = treemodel.iter_parent(iter)
+                in_artist = text in treemodel.get_value(artist_iter, 0).lower()
+                if in_artist:
+                    print "Not in album, but in artist, so show it"
+                return in_artist
+        return False
 
     def _libraryRowSelected(self, treeview):
         """
