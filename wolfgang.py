@@ -340,12 +340,21 @@ class GhettoBlaster():
         tracks (and URIs), and replace self.playlist_store with a new store
         model containing the results.
         """
-        (treemodel, current_iter) = treeview.get_selection().get_selected()
+        # "treemodel" will return the TreeModelFilter (self.library_filtered)
+        (modelfilter, current_iter) = treeview.get_selection().get_selected()
+        treemodel = modelfilter.get_model()
+        print modelfilter
+        print treemodel
+        print current_iter
         if current_iter is None:
             # Nothing selected. This happens on startup.
             return
         column = 0
-        current_value = self.library_store.get_value(current_iter, column)
+        current_value = treemodel.get_value(current_iter, column)
+        print "Current value:"
+        # We must use library_store (not library_filtered) because a modelfilter
+        # does not have a notion of iter_depth...
+        print "iter depth is", treemodel.iter_depth(current_iter)
         if treemodel.iter_depth(current_iter) is 0:
             # An artist is selected
             tracks = []
@@ -355,7 +364,7 @@ class GhettoBlaster():
         else:
             # An album is selected
             temp_iter = treemodel.iter_parent(current_iter)
-            artist = self.library_store.get_value(temp_iter, column)
+            artist = treemodel.get_value(temp_iter, column)
             tracks = self.library[artist][current_value]
         # Don't bother with existing items, scrap the old model and rebuild it
         self.playlist_store = Gtk.ListStore(str, str)
