@@ -440,6 +440,9 @@ class GhettoBlaster():
             print "Got message of type ", message.type
             print "Got message of src ", message.src
             print "Got message of error ", message.parse_error()
+            error_iter = self.queue_current_iter
+            self.next()
+            self.queue_store.set_value(error_iter, 0, "⚠")
 
     def _about_to_finish (self, playbin):
         next_iter = self.queue_store.iter_next(self.queue_current_iter)
