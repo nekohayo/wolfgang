@@ -14,7 +14,7 @@ from samples import LIBRARY
 
 from engine import Engine
 
-class GhettoBlaster():
+class Wolfgang():
 
     def __init__(self):
         self.engine = Engine()
@@ -414,5 +414,5 @@ class GhettoBlaster():
             print "Playback ended"
             self.play_button.set_active(False)
 
-Amadeus = GhettoBlaster()
+wolfgang = Wolfgang()
 Gtk.main()
