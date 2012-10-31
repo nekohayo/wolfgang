@@ -12,24 +12,16 @@ import random
 # Each list is composed of strings for URI, title, artist, album.
 from samples import LIBRARY
 
+from engine import Engine
+
 class GhettoBlaster():
 
     def __init__(self):
-        Gst.init(None)
-        print "Running with GStreamer", str(Gst.version()[0]) + "." + str(Gst.version()[1]) + "." + str(Gst.version()[2])
-        self.IS_GST010 = Gst.version()[0] == 0
-        if self.IS_GST010:
-            PLAYBIN_ELEMENT = "playbin2"
-            print "Only GStreamer 1.0 is supported for this demo."
-            exit(1)
-        else:
-            PLAYBIN_ELEMENT = "playbin"
+        self.engine = Engine()
 
-        self.tune = Gst.ElementFactory.make(PLAYBIN_ELEMENT, "John Smith")
+        self.uri = None
         self.is_playing = False
-        self._seeking = False
         self._sliderGrabbed = False
-        self._current_position = self._target_position = 0
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -59,10 +51,8 @@ class GhettoBlaster():
         self.window.connect("delete-event", self.quit)
         self.window.show_all()
 
-        self.bus = self.tune.get_bus()
-        self.bus.add_signal_watch()
-        self.bus.connect("message", self._onBusMessage)
-        self.tune.connect("about-to-finish",  self._about_to_finish)
+        self.engine.connect("about_to_finish", self._onAboutToFinish)
+        self.engine.connect("error", self._onError)
 
         GObject.timeout_add(500, self._updateSliderPosition)
 
@@ -154,8 +144,7 @@ class GhettoBlaster():
         if prev_iter is None:
             return False
         uri = self.queue_store.get_value(prev_iter, 2)
-        self.set_uri(uri)
-        self.play()
+        self.engine.play(uri)
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(prev_iter, 0, "♪")
         self.queue_current_iter = prev_iter
@@ -179,8 +168,7 @@ class GhettoBlaster():
         if next_iter is None:
             return False
         uri = self.queue_store.get_value(next_iter, 2)
-        self.set_uri(uri)
-        self.play()
+        self.engine.play(uri)
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(next_iter, 0, "♪")
         self.queue_current_iter = next_iter
@@ -327,8 +315,7 @@ class GhettoBlaster():
         treemodel.set_value(current_iter, 0, "♪")
         self.queue_current_iter = current_iter
         self.pause()
-        uri = treemodel.get_value(current_iter, 2)
-        self.set_uri(uri)
+        self.uri = treemodel.get_value(current_iter, 2)
         self.play()
 
         self.previous_button.set_sensitive(False)
@@ -358,30 +345,14 @@ class GhettoBlaster():
             
         if event.type is Gdk.EventType.BUTTON_RELEASE:
             target_percent = widget.get_adjustment().props.value / 100.0
-            if self.IS_GST010:
-                duration = self.tune.query_duration(Gst.Format.TIME)[2]
-            else:
-                duration = self.tune.query_duration(Gst.Format.TIME)[1]
-            self._target_position = target_percent * duration
-            self._seek()
-
-    def _seek(self):
-        if not self._seeking and self._current_position != self._target_position:
-            self._seeking = True
-            print "Seek to", self._target_position
-            self.tune.seek_simple(Gst.Format.TIME,
-                                Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
-                                self._target_position)
-            self._current_position = self._target_position
+            duration = self.engine.query_duration()
+            target_position = target_percent * duration
+            self.engine.seek(target_position)
 
     def _updateSliderPosition(self):
         if self.is_playing and not self._sliderGrabbed:
-            if self.IS_GST010:
-                pos = self.tune.query_position(Gst.Format.TIME)[2]
-                duration = self.tune.query_duration(Gst.Format.TIME)[2]
-            else:
-                pos = self.tune.query_position(Gst.Format.TIME)[1]
-                duration = self.tune.query_duration(Gst.Format.TIME)[1]
+            pos = self.engine.query_position()
+            duration = self.engine.query_duration()
             if not duration == 0:  # GStreamer nonsense, occurring randomly.
                 print "Position is", pos, "and duration is", duration
                 new_slider_pos = pos / float(duration) * 100
@@ -397,11 +368,12 @@ class GhettoBlaster():
     Public playback methods (not callbacks)
     """
     def play(self):
-        if self.tune.props.uri is None:
+        if self.uri is None:
             # The user clicked play without selecting a track, play the 1st
-            self.set_uri(self.queue_store.get_value(self.queue_current_iter, 2))
+            self.uri = self.queue_store.get_value(self.queue_current_iter, 2)
             self.queue_store.set_value(self.queue_current_iter, 0, "♪")
-        self.tune.set_state(Gst.State.PLAYING)
+        self.time_slider.set_value(0)
+        self.engine.play(self.uri)
         self.is_playing = True
         self.play_button.props.active = True
         self.time_slider.set_sensitive(True)
@@ -411,46 +383,26 @@ class GhettoBlaster():
             self.previous_button.set_sensitive(True)
 
     def pause(self):
-        self.tune.set_state(Gst.State.PAUSED)
+        self.engine.pause()
         self.play_button.props.active = False
         self.is_playing = False
 
-    def set_uri(self, uri):
-        self.time_slider.set_value(0)
-        self.tune.set_state(Gst.State.NULL)
-        self.tune.props.uri = uri
-        self.tune.set_state(Gst.State.READY)
-        print "A URI has been set"
-
     """
-    GStreamer callbacks
+    Engine callbacks
     """
-    def _onBusMessage(self, bus, message):
-        if message is None:
-            # This doesn't make any sense, but it happens all the time.
-            return
-        elif message.type is Gst.MessageType.TAG:
-            # TODO: do something with ID3 tags or not?
-            pass
-        elif message.type is Gst.MessageType.ASYNC_DONE:
-            print "Async done, now try seeking"
-            self._seeking = False
-            self._seek()
-        elif message.type is Gst.MessageType.ERROR:
-            print "Got message of type ", message.type
-            print "Got message of src ", message.src
-            print "Got message of error ", message.parse_error()
-            error_iter = self.queue_current_iter
-            self.next()
-            self.queue_store.set_value(error_iter, 0, "⚠")
+    def _onError(self, arg):
+        error_iter = self.queue_current_iter
+        self.next()
+        self.queue_store.set_value(error_iter, 0, "⚠")
 
-    def _about_to_finish (self, playbin):
+    def _onAboutToFinish (self, arg):
+        print "wolfgang: about to finish"
         next_iter = self.queue_store.iter_next(self.queue_current_iter)
         if next_iter is not None:
             print "Song ended, play the next one"
             uri = self.queue_store.get_value(next_iter, 2)
-            self.tune.props.uri = uri
-            self.play()
+            self.uri = uri
+            self.engine.next_uri(self.uri)
             self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
             self.queue_store.set_value(next_iter, 0, "♪")
             self.queue_current_iter = next_iter
