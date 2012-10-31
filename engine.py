@@ -24,8 +24,6 @@
 from gi.repository import Gst
 from gi.repository import GObject
 
-#from signal import SignalGroup, Signallable
-
 class Engine (GObject.GObject):
     '''GStreamer engine class. Encapsulates all the core gstreamer work in
        simple function per feature for the HMI'''
@@ -132,4 +130,4 @@ if __name__ == "__main__":
 
     engine = Engine()
     engine.play (options.input)
-    gobject.MainLoop().run()
+    GObject.MainLoop().run()
