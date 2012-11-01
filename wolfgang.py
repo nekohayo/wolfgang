@@ -314,7 +314,7 @@ class Wolfgang():
             treemodel.set_value(previous_iter, 0, "")  # remove the ♪ cursor
         treemodel.set_value(current_iter, 0, "♪")
         self.queue_current_iter = current_iter
-        self.pause()
+        self.engine.stop()
         self.uri = treemodel.get_value(current_iter, 2)
         self.play()
 
@@ -402,7 +402,7 @@ class Wolfgang():
             print "Song ended, play the next one"
             uri = self.queue_store.get_value(next_iter, 2)
             self.uri = uri
-            self.engine.next_uri(self.uri)
+            self.engine.play(self.uri)
             self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
             self.queue_store.set_value(next_iter, 0, "♪")
             self.queue_current_iter = next_iter

@@ -60,7 +60,8 @@ class Engine (GObject.GObject):
         self.player.connect("about-to-finish",  self._about_to_finish)
 
     def play (self, uri):
-        self.player.set_state (Gst.State.NULL)
+        if self.is_playing == False:
+            self.player.set_state (Gst.State.NULL)
         self.player.props.uri = uri
         self.player.set_state (Gst.State.PLAYING)
         self.is_playing = True
@@ -68,14 +69,14 @@ class Engine (GObject.GObject):
     def pause (self):
         self.player.set_state (Gst.State.PAUSED)
 
+    def stop (self):
+        self.player.set_state (Gst.State.READY)
+        self.is_playing = False
+
     def seek (self, target_position):
         self.player.seek_simple (Gst.Format.TIME, \
             Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, \
             target_position)
-
-    def next_uri (self, uri):
-        self.player.props.uri = uri
-        self.player.set_state (Gst.State.PLAYING)
 
     def _seek (self):
         if not self._seeking and self._current_position != self._target_position:
