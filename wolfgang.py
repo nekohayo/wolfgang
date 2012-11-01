@@ -143,9 +143,9 @@ class Wolfgang():
         prev_iter = self.queue_store.iter_previous(self.queue_current_iter)
         if prev_iter is None:
             return False
-        uri = self.queue_store.get_value(prev_iter, 2)
+        self.uri = self.queue_store.get_value(prev_iter, 2)
         self.engine.stop()
-        self.engine.play(uri)
+        self.play()
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(prev_iter, 0, "♪")
         self.queue_current_iter = prev_iter
@@ -168,9 +168,9 @@ class Wolfgang():
         next_iter = self.queue_store.iter_next(self.queue_current_iter)
         if next_iter is None:
             return False
-        uri = self.queue_store.get_value(next_iter, 2)
+        self.uri = self.queue_store.get_value(next_iter, 2)
         self.engine.stop()
-        self.engine.play(uri)
+        self.play()
         self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
         self.queue_store.set_value(next_iter, 0, "♪")
         self.queue_current_iter = next_iter
