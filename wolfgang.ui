@@ -275,9 +275,25 @@
               </packing>
             </child>
             <child>
+              <object class="GtkToggleToolButton" id="loop_button">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="tooltip_text" translatable="yes">If activated, playback will start again from the first item when the end of the queue is reached</property>
+                <property name="label" translatable="yes">Loop</property>
+                <property name="use_underline">True</property>
+                <property name="icon_name">media-playlist-repeat-symbolic</property>
+                <signal name="toggled" handler="_loop_toggled" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkToolButton" id="shuffle_button">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="tooltip_text" translatable="yes">Randomize the order of items in the queue</property>
                 <property name="label" translatable="yes">Shuffle</property>
                 <property name="use_underline">True</property>
                 <property name="icon_name">mail-send-receive-symbolic</property>

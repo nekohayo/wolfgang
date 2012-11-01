@@ -178,6 +178,15 @@ class Wolfgang():
         if not self.queue_store.iter_next(self.queue_current_iter):
             self.next_button.set_sensitive(False)
 
+    def _loop_toggled(self, widget):
+        """
+        Callback for the Loop pushbutton
+        """
+        if widget.props.active:
+            print "Activate portal device"
+        else:
+            print "Deactivate looping"
+
     def shuffle(self, unused_widget=None):
         # Walk through the current queue and create a list out of it
         internal_queue = []
