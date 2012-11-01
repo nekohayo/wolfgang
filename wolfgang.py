@@ -374,7 +374,6 @@ class Wolfgang():
             # The user clicked play without selecting a track, play the 1st
             self.uri = self.queue_store.get_value(self.queue_current_iter, 2)
             self.queue_store.set_value(self.queue_current_iter, 0, "♪")
-        self.time_slider.set_value(0)
         self.engine.play(self.uri)
         self.is_playing = True
         self.play_button.props.active = True
