@@ -22,6 +22,7 @@ class Wolfgang():
         self.uri = None
         self.is_playing = False
         self._sliderGrabbed = False
+        self.loop = False
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -184,8 +185,10 @@ class Wolfgang():
         """
         if widget.props.active:
             print "Activate portal device"
+            self.loop = True
         else:
             print "Deactivate looping"
+            self.loop = False
 
     def shuffle(self, unused_widget=None):
         # Walk through the current queue and create a list out of it
@@ -422,7 +425,19 @@ class Wolfgang():
 
         else:
             print "Playback ended"
-            self.play_button.set_active(False)
+            if not self.loop:
+                self.play_button.set_active(False)
+            else:
+                first_iter = self.queue_store.get_iter_first()
+                self.uri = self.queue_store.get_value(first_iter, 2)
+                self.engine.play(self.uri)
+                self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+                self.queue_store.set_value(first_iter, 0, "♪")
+                self.queue_current_iter = first_iter
+                self.previous_button.set_sensitive(True)
+                if self.queue_store.iter_next(self.queue_current_iter):
+                    self.next_button.set_sensitive(True)
+
 
 wolfgang = Wolfgang()
 Gtk.main()
