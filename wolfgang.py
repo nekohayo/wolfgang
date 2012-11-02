@@ -23,6 +23,7 @@ class Wolfgang():
         self.is_playing = False
         self._sliderGrabbed = False
         self.loop = False
+        self.library = {}
 
         self.builder = Gtk.Builder()
         self.builder.add_from_file(path.join(path.curdir, "wolfgang.ui"))
@@ -44,7 +45,6 @@ class Wolfgang():
         self.previous_button.set_sensitive(False)
 
         self._prepare_treeviews()
-        self._populate_library()
 
         self.window = self.builder.get_object("window1")
         self.window.set_icon_name("rhythmbox")
@@ -54,6 +54,9 @@ class Wolfgang():
 
         self.engine.connect("about_to_finish", self._onAboutToFinish)
         self.engine.connect("error", self._onError)
+        self.indexer.connect("discovered", self._populate_library)
+
+        self.indexer.collect("/home/luisbg/music")
 
         GObject.timeout_add(500, self._updateSliderPosition)
 
@@ -105,7 +108,7 @@ class Wolfgang():
         # Silly hack to steal the focus from the gtk entry:
         self.library_treeview.grab_focus()
 
-    def _populate_library(self):
+    def _populate_library(self, indexer, uri, artist, album, title):
         """
         for track in LIBRARY:
             if artist not already there: add it
@@ -113,28 +116,29 @@ class Wolfgang():
             add the track title and URI
         """
         last_artist_iter = self.library_store.get_iter_first()
+
         # A list of tracks (and URIs) in a dic of albums in a dic of artists:
-        self.library = {}
-        for track in self.indexer.collect("/home/luisbg/music/"):
-            (uri, title, artist, album) = (track[0], track[1], track[2], \
-                    track[3])
-            if not Gst.uri_is_valid(uri):
-                uri = Gst.filename_to_uri(uri)
-            if artist not in self.library:
-                self.library[artist] = {}
+        if not Gst.uri_is_valid(uri):
+            uri = Gst.filename_to_uri(uri)
+        if artist not in self.library:
+            self.library[artist] = {}
+            artist_iter = self.library_store.append(None, [artist])
             if album not in self.library[artist]:
                 self.library[artist][album] = []
-            self.library[artist][album].append([title, uri])
-        # And now, we have a nice internal model that is guaranteed against
-        # duplicates and incorrectly parented items, so create the tree store
-        # model from it. It needs to be done here instead of in the loop above,
-        # otherwise we would not correctly parent the albums with the artists
-        # if the tracks in samples.py are provided in a non-ordered fashion.
-        for artist in self.library.iterkeys():
-            artist_iter = self.library_store.append(None, [artist])
-            for album in self.library[artist].iterkeys():
+                self.library_store.append(artist_iter, [album])
+        else:
+            if album not in self.library[artist]:
+                column = 0
+                artist_iter = self.library_store.get_iter_first()
+                while (artist != \
+                      self.library_store.get_value (artist_iter, column)) and \
+                      (artist != None):
+                    artist_iter = self.library_store.iter_next (artist_iter)
+
+                self.library[artist][album] = []
                 self.library_store.append(artist_iter, [album])
 
+        self.library[artist][album].append([title, uri])
 
     """
     UI methods and callbacks

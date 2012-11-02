@@ -22,15 +22,26 @@
 """Indexer class"""
 
 from gi.repository import Gst, GstPbutils
+from gi.repository import GObject
 
 import os
 
-class Indexer ():
+class Indexer (GObject.GObject):
     '''Indexer class. Encapsulates all the indexing work in
        simple function per feature for the HMI'''
 
+    __gsignals__ = {
+        'discovered': (GObject.SIGNAL_RUN_FIRST, None,
+                      (GObject.TYPE_STRING, GObject.TYPE_STRING, \
+                       GObject.TYPE_STRING, GObject.TYPE_STRING))
+    }
+
     def __init__ (self):
+        GObject.GObject.__init__(self)
         Gst.init(None)
+        self.disc = GstPbutils.Discoverer.new (50000000000)
+        self.disc.connect('discovered', self.discovered)
+        self.disc.start()
 
     def scan_folder_for_ext (self, folder, ext):
         scan = []
@@ -38,8 +49,7 @@ class Indexer ():
             for file in files:
                 if file.split('.')[-1] in ext:
                     location = os.path.join(path, file)
-                    art, alb, tra = self.discover_metadata(location)
-                    scan.append((location, tra, art, alb))
+                    self.discover_metadata(location)
         return scan
 
     def collect (self, folder):
@@ -55,24 +65,28 @@ class Indexer ():
 
     def discover_metadata (self, location):
         file_uri= Gst.filename_to_uri (location)
+        info = self.disc.discover_uri_async (file_uri)
 
-        disc = GstPbutils.Discoverer.new (50000000000)
-        info = disc.discover_uri (file_uri)
-        tags = info.get_tags ()
+    def discovered (self, discoverer, info, error):
+        if not error:
+            uri = info.get_uri()
+            tags = info.get_tags ()
 
-        artist = album = title = "unknown"
+            artist = album = title = "unknown"
 
-        tagged, tag = tags.get_string('artist')
-        if tagged:
-            artist = tag
-        tagged, tag = tags.get_string('album')
-        if tagged:
-            album = tag
-        tagged, tag = tags.get_string('title')
-        if tagged:
-            title = tag
+            tagged, tag = tags.get_string('artist')
+            if tagged:
+                artist = tag
 
-        return artist, album, title
+            tagged, tag = tags.get_string('album')
+            if tagged:
+                album = tag
+
+            tagged, tag = tags.get_string('title')
+            if tagged:
+                title = tag
+
+        self.emit ("discovered", uri, artist, album, title)
 
     def test (self, folder):
         all = self.collect (folder)
