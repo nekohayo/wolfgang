@@ -92,11 +92,11 @@ class Engine (GObject.GObject):
         return self.player.query_position (Gst.Format.TIME)[1]
 
 
-    """ 
+    """
     GStreamer callbacks
     """
     def _onBusMessage(self, bus, message):
-        if message is None: 
+        if message is None:
             # This doesn't make any sense, but it happens all the time.
             return
         elif message.type is Gst.MessageType.TAG:

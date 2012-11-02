@@ -67,7 +67,7 @@ class Wolfgang():
         # If we enable this, we'll get in trouble in the removeFromQueue method:
         # self.queue_treeview.get_selection().set_mode(Gtk.SelectionMode.MULTIPLE)
 
-        self.library_store = Gtk.TreeStore(str)  # Only 1 "column" to contain all
+        self.library_store = Gtk.TreeStore(str) # Only 1 "column" to contain all
         self.playlist_store = Gtk.ListStore(str, str)  # title, URI
         self.queue_store = Gtk.ListStore(str, str, str)  # cursor, title, URI
         self.queue_current_iter = None  # To keep track of where the cursor was
@@ -116,7 +116,8 @@ class Wolfgang():
         # A list of tracks (and URIs) in a dic of albums in a dic of artists:
         self.library = {}
         for track in self.indexer.collect("/home/luisbg/music/"):
-            (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
+            (uri, title, artist, album) = (track[0], track[1], track[2], \
+                    track[3])
             if not Gst.uri_is_valid(uri):
                 uri = Gst.filename_to_uri(uri)
             if artist not in self.library:
@@ -147,7 +148,8 @@ class Wolfgang():
         self.uri = self.queue_store.get_value(prev_iter, 2)
         self.engine.stop()
         self.play()
-        self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+        # remove the ♪ cursor
+        self.queue_store.set_value(self.queue_current_iter, 0, "")
         self.queue_store.set_value(prev_iter, 0, "♪")
         self.queue_current_iter = prev_iter
         self.next_button.set_sensitive(True)
@@ -172,7 +174,8 @@ class Wolfgang():
         self.uri = self.queue_store.get_value(next_iter, 2)
         self.engine.stop()
         self.play()
-        self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+        # remove the ♪ cursor
+        self.queue_store.set_value(self.queue_current_iter, 0, "")
         self.queue_store.set_value(next_iter, 0, "♪")
         self.queue_current_iter = next_iter
         self.previous_button.set_sensitive(True)
@@ -197,7 +200,8 @@ class Wolfgang():
         while current_iter:
             uri = self.queue_store.get_value(current_iter, 1)
             title = self.queue_store.get_value(current_iter, 2)
-            # The first item is the playback indicator column, not used here, so None
+            # The first item is the playback indicator column, not used here,
+            # so None
             internal_queue.append([None, uri, title])
             current_iter = self.queue_store.iter_next(current_iter)
         # Shuffle everything up and then recreate the treeview from it.
@@ -219,7 +223,8 @@ class Wolfgang():
         """
         # Warning: this all assumes we only allow single item selections.
         # get_selected will fail to work if we allow multiple selections.
-        (treemodel, current_iter) = self.playlist_treeview.get_selection().get_selected()
+        (treemodel, current_iter) = \
+            self.playlist_treeview.get_selection().get_selected()
         column = 0
 
         def _addIterToQueue(current_iter):
@@ -261,7 +266,8 @@ class Wolfgang():
         # which segfaults later when trying to play another track! Urgh.
         # We're thus forced to do the comparison manually with the URI values:
         selected_row_is_queue_current_iter = False
-        if self.queue_store.get_value(row_iter, 2) == self.queue_store.get_value(self.queue_current_iter, 2):
+        if self.queue_store.get_value(row_iter, 2) == \
+                self.queue_store.get_value(self.queue_current_iter, 2):
             # That check is quite naïve and might be incorrect in edge cases
             # where you have duplicates in your queue, but whatever.
             selected_row_is_queue_current_iter = True
@@ -344,7 +350,7 @@ class Wolfgang():
         We handle the mouse button clicks and movements (scrubbing) here.
         This is thus called by button-press-event, button-release-event and
         motion-notify-event.
-        
+
         This is also where seeks are triggered on click.
         """
         if Gtk.get_major_version() >= 3 and Gtk.get_minor_version() < 6:
@@ -356,7 +362,7 @@ class Wolfgang():
             self._sliderGrabbed = True
         elif event.type is Gdk.EventType.BUTTON_RELEASE:
             self._sliderGrabbed = False
-            
+
         if event.type is Gdk.EventType.BUTTON_RELEASE:
             target_percent = widget.get_adjustment().props.value / 100.0
             duration = self.engine.query_duration()
@@ -416,7 +422,8 @@ class Wolfgang():
             uri = self.queue_store.get_value(next_iter, 2)
             self.uri = uri
             self.engine.play(self.uri)
-            self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+            # remove the ♪ cursor
+            self.queue_store.set_value(self.queue_current_iter, 0, "")
             self.queue_store.set_value(next_iter, 0, "♪")
             self.queue_current_iter = next_iter
             self.previous_button.set_sensitive(True)
@@ -431,7 +438,8 @@ class Wolfgang():
                 first_iter = self.queue_store.get_iter_first()
                 self.uri = self.queue_store.get_value(first_iter, 2)
                 self.engine.play(self.uri)
-                self.queue_store.set_value(self.queue_current_iter, 0, "")  # remove the ♪ cursor
+                # remove the ♪ cursor
+                self.queue_store.set_value(self.queue_current_iter, 0, "")
                 self.queue_store.set_value(first_iter, 0, "♪")
                 self.queue_current_iter = first_iter
                 self.previous_button.set_sensitive(True)
