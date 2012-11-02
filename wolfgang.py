@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 # Wolfgang is a very simple audio player demo using media indexing
 # Copyright 2012 Jean-François Fortin Tam, Luis de Bethencourt
+
+from engine import Engine
+from indexer import Indexer
+
 from gi.repository import Gtk, Gdk
 from gi.repository import Gst
 from gi.repository import GObject
 from os import path
 from sys import exit
 import random
-# In a separate "samples" file, use a list in a tuple (the "LIBRARY" constant).
-# Each list is composed of strings for URI, title, artist, album.
-from samples import LIBRARY
-
-from engine import Engine
 
 class Wolfgang():
 
     def __init__(self):
         self.engine = Engine()
+        self.indexer = Indexer()
 
         self.uri = None
         self.is_playing = False
@@ -115,7 +115,7 @@ class Wolfgang():
         last_artist_iter = self.library_store.get_iter_first()
         # A list of tracks (and URIs) in a dic of albums in a dic of artists:
         self.library = {}
-        for track in LIBRARY:
+        for track in self.indexer.collect("/home/luisbg/music/"):
             (uri, title, artist, album) = (track[0], track[1], track[2], track[3])
             if not Gst.uri_is_valid(uri):
                 uri = Gst.filename_to_uri(uri)
