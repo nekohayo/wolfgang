@@ -56,7 +56,17 @@ class Wolfgang():
         self.engine.connect("error", self._onError)
         self.indexer.connect("discovered", self._populate_library)
 
-        self.indexer.collect("/home/luisbg/music")
+        # Slight hack to get the user's "Music" XDG directory:
+        with open(path.expanduser("~/.config/user-dirs.dirs"), "r") as foo:
+            lines = foo.readlines()
+            for line in lines:
+                if "XDG_MUSIC_DIR" in line:
+                    home = path.expanduser("~")
+                    music_folder = line.split('"')[1].replace("$HOME", home)
+                    break
+            foo.close()
+
+        self.indexer.collect(music_folder)
 
         GObject.timeout_add(500, self._updateSliderPosition)
 
