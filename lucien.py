@@ -19,15 +19,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
 # USA
 
-"""Indexer class"""
+"""Lucien class"""
 
 from gi.repository import Gst, GstPbutils
 from gi.repository import GObject
 
 import os
 
-class Indexer (GObject.GObject):
-    '''Indexer class. Encapsulates all the indexing work in
+class Lucien (GObject.GObject):
+    '''Lucien class. Encapsulates all the indexing work in
        simple function per feature for the HMI'''
 
     __gsignals__ = {
@@ -108,7 +108,7 @@ class Indexer (GObject.GObject):
 if __name__ == "__main__":
     import os, optparse
 
-    usage = """indexer.py -i [folder]"""
+    usage = """lucien.py -i [folder]"""
 
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-i", "--input", action="store", type="string", \
@@ -117,5 +117,5 @@ if __name__ == "__main__":
 
     print "Indexing: %r" % options.input
 
-    indexer = Indexer()
-    indexer.test (options.input)
+    lucien = Lucien()
+    lucien.test (options.input)

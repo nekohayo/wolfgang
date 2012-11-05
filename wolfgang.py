@@ -4,7 +4,7 @@
 # Copyright 2012 Jean-François Fortin Tam, Luis de Bethencourt
 
 from engine import Engine
-from indexer import Indexer
+from lucien import Lucien
 
 from gi.repository import Gtk, Gdk
 from gi.repository import Gst
@@ -17,7 +17,7 @@ class Wolfgang():
 
     def __init__(self):
         self.engine = Engine()
-        self.indexer = Indexer()
+        self.lucien = Lucien()
 
         self.uri = None
         self.is_playing = False
@@ -54,7 +54,7 @@ class Wolfgang():
 
         self.engine.connect("about_to_finish", self._onAboutToFinish)
         self.engine.connect("error", self._onError)
-        self.indexer.connect("discovered", self._new_media)
+        self.lucien.connect("discovered", self._new_media)
 
         # Slight hack to get the user's "Music" XDG directory:
         with open(path.expanduser("~/.config/user-dirs.dirs"), "r") as foo:
@@ -66,7 +66,7 @@ class Wolfgang():
                     break
             foo.close()
 
-        self.indexer.collect(music_folder)
+        self.lucien.collect(music_folder)
 
         GObject.timeout_add(500, self._updateSliderPosition)
 
@@ -310,7 +310,7 @@ class Wolfgang():
         self.queue_store.remove(row_iter)
 
     def _searchEntryChanged(self, widget):
-        result = self.indexer.search_in_any(widget.get_text())
+        result = self.lucien.search_in_any(widget.get_text())
         self._populate_library_from_list (result)
 
     def _searchEntryIconRelease(self, widget, unused_icon_position, unused_arg):
