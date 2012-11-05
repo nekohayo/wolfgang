@@ -54,7 +54,7 @@ class Wolfgang():
 
         self.engine.connect("about_to_finish", self._onAboutToFinish)
         self.engine.connect("error", self._onError)
-        self.indexer.connect("discovered", self._populate_library)
+        self.indexer.connect("discovered", self._new_media)
 
         # Slight hack to get the user's "Music" XDG directory:
         with open(path.expanduser("~/.config/user-dirs.dirs"), "r") as foo:
@@ -118,15 +118,22 @@ class Wolfgang():
         # Silly hack to steal the focus from the gtk entry:
         self.library_treeview.grab_focus()
 
-    def _populate_library(self, indexer, uri, artist, album, title):
+    def _new_media (self, indexer, uri, artist, album, title):
+        self._populate_library (uri, artist, album, title)
+
+    def _populate_library_from_list (self, new_library):
+        self.library_store.clear()
+        self.library = {}
+        for track in new_library:
+            self._populate_library (track[0], track[1], track[2], track[3])
+
+    def _populate_library(self, uri, artist, album, title):
         """
         for track in LIBRARY:
             if artist not already there: add it
             if album not already there: add it as a child of the artist
             add the track title and URI
         """
-        last_artist_iter = self.library_store.get_iter_first()
-
         # A list of tracks (and URIs) in a dic of albums in a dic of artists:
         if not Gst.uri_is_valid(uri):
             uri = Gst.filename_to_uri(uri)
@@ -301,6 +308,13 @@ class Wolfgang():
         # the list store will be working correctly.
         # In any case, we can now safely remove the item from the list store:
         self.queue_store.remove(row_iter)
+
+    def _searchEntryChanged(self, widget):
+        result = self.indexer.search_in_any(widget.get_text())
+        self._populate_library_from_list (result)
+
+    def _searchEntryIconRelease(self, widget, unused_icon_position, unused_arg):
+        widget.set_text("")
 
     def _libraryRowSelected(self, treeview):
         """

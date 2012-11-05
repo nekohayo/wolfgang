@@ -42,6 +42,7 @@ class Indexer (GObject.GObject):
         self.disc = GstPbutils.Discoverer.new (50000000000)
         self.disc.connect('discovered', self.discovered)
         self.disc.start()
+        self.index = []
 
     def scan_folder_for_ext (self, folder, ext):
         scan = []
@@ -87,6 +88,16 @@ class Indexer (GObject.GObject):
                 title = tag
 
         self.emit ("discovered", uri, artist, album, title)
+        self.index.append((uri, artist, album, title))
+
+    def search_in_any (self, query):
+        result = []
+        for track in self.index:
+            if query.lower() in track[1].lower() or \
+                    query.lower() in track[2].lower() or \
+                    query.lower() in track[3].lower():
+                result.append(track)
+        return result
 
     def test (self, folder):
         all = self.collect (folder)

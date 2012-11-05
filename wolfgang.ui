@@ -31,6 +31,8 @@
                 <property name="invisible_char">●</property>
                 <property name="secondary_icon_name">edit-clear-symbolic</property>
                 <property name="placeholder_text">Search</property>
+                <signal name="changed" handler="_searchEntryChanged" swapped="no"/>
+                <signal name="icon-release" handler="_searchEntryIconRelease" swapped="no"/>
               </object>
               <packing>
                 <property name="left_attach">0</property>
