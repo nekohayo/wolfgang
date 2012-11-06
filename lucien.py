@@ -33,7 +33,8 @@ class Lucien (GObject.GObject):
     __gsignals__ = {
         'discovered': (GObject.SIGNAL_RUN_FIRST, None,
                       (GObject.TYPE_STRING, GObject.TYPE_STRING, \
-                       GObject.TYPE_STRING, GObject.TYPE_STRING))
+                       GObject.TYPE_STRING, GObject.TYPE_STRING, \
+                       GObject.TYPE_UINT))
     }
 
     def __init__ (self):
@@ -74,6 +75,7 @@ class Lucien (GObject.GObject):
             tags = info.get_tags ()
 
             artist = album = title = "unknown"
+            track = 0
 
             tagged, tag = tags.get_string('artist')
             if tagged:
@@ -87,8 +89,12 @@ class Lucien (GObject.GObject):
             if tagged:
                 title = tag
 
-        self.emit ("discovered", uri, artist, album, title)
-        self.index.append((uri, artist, album, title))
+            tagged, tag = tags.get_uint('track-number')
+            if tagged:
+                track = tag
+
+        self.emit ("discovered", uri, artist, album, title, track)
+        self.index.append((uri, artist, album, title, track))
 
     def search_in_any (self, query):
         result = []
