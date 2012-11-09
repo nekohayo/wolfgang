@@ -135,6 +135,16 @@ class Wolfgang():
             if album not already there: add it as a child of the artist
             add the track title and URI
         """
+        # Avoid adding tracks when searching,
+        # unless they would be a search result anyway
+        search_text = \
+            self.builder.get_object("search_entry").get_text().lower()
+        if not search_text == "":
+            if search_text not in artist.lower() and \
+                    search_text not in album.lower() and \
+                    search_text not in title.lower():
+                return
+
         # A list of tracks (and URIs) in a dic of albums in a dic of artists:
         if not Gst.uri_is_valid(uri):
             uri = Gst.filename_to_uri(uri)
