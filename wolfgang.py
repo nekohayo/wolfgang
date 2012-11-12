@@ -276,7 +276,11 @@ class Wolfgang():
                 current_iter = treemodel.iter_next(current_iter)
         else:
             _addIterToQueue(current_iter)
+
         self.main_toolbar.set_sensitive(True)
+        # Enable "Next" when appending after the currently playing track
+        if self.is_playing and self.queue_store.iter_next(self.queue_current_iter):
+            self.next_button.set_sensitive(True)
 
     def clearQueue(self, unused_widget=None):
         # C-style "no messing around with loops, just drop the pointer" tactic
